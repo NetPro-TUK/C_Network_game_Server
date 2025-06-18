@@ -76,7 +76,7 @@ DWORD WINAPI ProcessClient(LPVOID arg) {
 	while (flag) {
 		// 1. MsgHeader 수신
 		int ret = recv_full(hClntSock, &header, sizeof(header));
-		if (ret <= 0) {
+		if (ret = 0) {
 			LOG_ERROR("헤더 수신 실패 또는 연결 종료");
 			break;
 		}
@@ -100,11 +100,9 @@ DWORD WINAPI ProcessClient(LPVOID arg) {
 			uint32_t id = ntohl(payload.entityId);  
 			float x = payload.x;
 			float y = payload.y;
-			float vx = payload.vx;
-			float vy = payload.vy;
 
-			printf("[STATE_UPDATE] id=%u, pos=(%.2f, %.2f), vel=(%.2f, %.2f)\n",
-				id, x, y, vx, vy);
+			printf("[STATE_UPDATE] id=%u, pos=(%.2f, %.2f), \n",
+				id, x, y);
 		}
 		else {
 			// 아직 처리 안 하는 타입

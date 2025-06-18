@@ -50,8 +50,6 @@ int main(void)
 	payload.entityId = htonl(1);  // ID만 바이트 오더 처리
 	payload.x = 10.5f;
 	payload.y = 20.0f;
-	payload.vx = 1.0f;
-	payload.vy = 0.0f;
 
 	header.length = htonl(sizeof(PayloadStateUpdate));
 	header.type = MSG_STATE_UPDATE;

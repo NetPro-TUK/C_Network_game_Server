@@ -22,11 +22,9 @@
     // 상태 업데이트 페이로드 구조체
     // entityId: 엔티티 고유 ID
     // x, y: 위치 좌표
-    // vx, vy: 속도 벡터
     typedef struct {
         uint32_t entityId;
         float    x, y;
-        float    vx, vy;
     } PayloadStateUpdate;
 
     // 액션 이벤트 페이로드 구조체
