@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <winsock2.h>
 
 #include "protocol.h"
 #include "net_utils.h"
@@ -67,70 +66,66 @@ int main(void)
 	return 0;
 }
 
-DWORD WINAPI ProcessClient( LPVOID arg ) {
-	int flag;
+DWORD WINAPI ProcessClient(LPVOID arg) {
 	SOCKET hClntSock = (SOCKET)arg;
-	int rcvSum, rcvTotal, ret, result;
-	char opndCnt, msg[MAX_PACKET_SIZE];
+	MsgHeader header;
+	int flag = 1;
 
-	printf("THREAD> new thread 생성.\n");
-	flag = 1;
-	while (flag) 
-	{
-		printf("THREAD> 계산 요청 대기 중.\n");
-		recv(hClntSock, &opndCnt, sizeof(opndCnt), 0);
-		printf("THREAD> 피연산자 수 = %d.\n", opndCnt);
+	LOG_INFO("THREAD> 클라이언트 핸들러 시작됨.");
 
-		rcvSum = 0; // 수신 누적치.
-		rcvTotal = opndCnt * sizeof(int) + 1; // 수신 목표치.
-		while (rcvSum < rcvTotal) {
-			ret = recv(hClntSock, &msg[rcvSum], rcvTotal - rcvSum, 0);
+	while (flag) {
+		// 1. MsgHeader 수신
+		int ret = recv_full(hClntSock, &header, sizeof(header));
+		if (ret <= 0) {
+			LOG_ERROR("헤더 수신 실패 또는 연결 종료");
+			break;
+		}
+
+		// 2. 헤더 정보 해석
+		uint32_t payload_len = ntohl(header.length);
+		MsgType type = header.type;
+
+		LOG_INFO("헤더 수신 완료: type=%d, length=%d", type, payload_len);
+
+		// 3. 메시지 타입에 따라 분기
+		if (type == MSG_STATE_UPDATE && payload_len == sizeof(PayloadStateUpdate)) {
+			PayloadStateUpdate payload;
+			ret = recv_full(hClntSock, &payload, sizeof(payload));
 			if (ret <= 0) {
-				printf("<ERROR> recv() 오류.\n");
-				flag = 0;
+				LOG_ERROR("PayloadStateUpdate 수신 실패");
 				break;
 			}
+
+			// 4. 바이트 오더 변환
+			uint32_t id = ntohl(payload.entityId);  
+			float x = payload.x;
+			float y = payload.y;
+			float vx = payload.vx;
+			float vy = payload.vy;
+
+			printf("[STATE_UPDATE] id=%u, pos=(%.2f, %.2f), vel=(%.2f, %.2f)\n",
+				id, x, y, vx, vy);
+		}
+		else {
+			// 아직 처리 안 하는 타입
+			LOG_WARN("알 수 없거나 처리하지 않은 메시지 타입 수신됨");
+			// 버퍼 날리기
+			char dump[512];
+			if (payload_len > 0 && payload_len < sizeof(dump)) {
+				recv_full(hClntSock, dump, payload_len);
+			}
 			else {
-				rcvSum = rcvSum + ret;
-				printf("THREAD> recv %d bytes. sum=%d, total=%d\n", ret, rcvSum, rcvTotal);
+				LOG_WARN("payload 길이 초과, 스킵");
+				break;
 			}
 		}
-		if (flag == 1) {
-			// 2. 계산 수행				
-			result = calculation((int)opndCnt, (int*)msg, msg[rcvTotal - 1]);
-			printf("THREAD> 계산 결과 = %d.\n", result);
-			// 3. send(result) to client 전달
-			send(hClntSock, (char*)&result, sizeof(result), 0);
-			printf("THREAD> 계산 결과 client로 전달.\n");
-		}
 	}
-	printf("THREAD> close socket with client.\n");
+
+	LOG_INFO("THREAD> 클라이언트 소켓 종료");
 	closesocket(hClntSock);
+	return 0;
 }
 
-int calculation(int opndCnt, int data[], char op)
-{
-	int result, i;
-	result = data[0];
-	switch (op) {
-	case '+':
-		for (i = 1; i < opndCnt; i++) {
-			result = result + data[i];
-		}
-		break;
-	case '-':
-		for (i = 1; i < opndCnt; i++) {
-			result = result - data[i];
-		}
-		break;
-	case '*':
-		for (i = 1; i < opndCnt; i++) {
-			result = result * data[i];
-		}
-		break;
-	}
-	return result;
-}
 
 void ErrorHandling(char *message)
 {

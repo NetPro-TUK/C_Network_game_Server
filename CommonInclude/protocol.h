@@ -1,10 +1,6 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>  // C 표준 정수형 정의
 
     // 메시지 타입 정의
@@ -42,9 +38,5 @@ extern "C" {
         uint32_t bulletId;
         float    dirX, dirY;
     } PayloadActionEvent;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* PROTOCOL_H */

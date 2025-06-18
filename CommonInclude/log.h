@@ -1,10 +1,6 @@
 #ifndef LOG_H
 #define LOG_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdio.h>  // printf 함수
 #include <time.h>   // time, localtime 관련 함수
 
@@ -34,18 +30,15 @@ extern "C" {
     static inline void log_message(LogLevel level, const char* msg, const char* file, int line) {
         time_t t = time(NULL);
         struct tm tm_info;
-#ifdef _WIN32
         localtime_s(&tm_info, &t);
-#else
-        localtime_r(&t, &tm_info);
-#endif
+
 
         // 시간 포맷팅: YYYY-MM-DD HH:MM:SS
         char time_buf[20];
         strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", &tm_info);
 
         // 로그 출력: [시간][LEVEL][파일:라인] 메시지
-        printf("[%s][%s][%s:%d] %s\n",
+        printf("[%s][%s][%s:%d] \n%s\n",
             time_buf,
             log_level_name(level),
             file,
@@ -58,9 +51,4 @@ extern "C" {
 #define LOG_INFO(msg)  log_message(LOG_LEVEL_INFO,  msg, __FILE__, __LINE__)
 #define LOG_WARN(msg)  log_message(LOG_LEVEL_WARN,  msg, __FILE__, __LINE__)
 #define LOG_ERROR(msg) log_message(LOG_LEVEL_ERROR, msg, __FILE__, __LINE__)
-
-#ifdef __cplusplus
-}
-#endif
-
 #endif /* LOG_H */

@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="TCPServer_cal_mthread_04.c">
+    <ClCompile Include="TCPServer_game.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
