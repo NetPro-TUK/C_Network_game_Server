@@ -12,6 +12,13 @@
 void ErrorHandling(char *message);
 DWORD WINAPI ProcessClient(LPVOID arg);
 
+typedef struct {
+    uint32_t entityId;
+    MsgType type;
+    int x;
+    int y;
+} Entity;
+
 int main(void)
 {
 	WSADATA wsaData;
