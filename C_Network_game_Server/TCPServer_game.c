@@ -79,8 +79,7 @@ int main(void)
                 sockArr[numOfClnt] = hClntSock;
                 WSAEventSelect(hClntSock, eventArr[numOfClnt], FD_READ | FD_CLOSE);
 
-                printf("Server> client connected: %s:%d\n",
-                    inet_ntoa(clntAdr.sin_addr), ntohs(clntAdr.sin_port));
+                printf("Server> client connected: %s:%d\n", inet_ntoa(clntAdr.sin_addr), ntohs(clntAdr.sin_port));
                 ++numOfClnt;
             }
             // 클라이언트 데이터 수신
@@ -94,6 +93,7 @@ int main(void)
                     sockArr[i] = sockArr[numOfClnt - 1];
                     eventArr[i] = eventArr[numOfClnt - 1];
                     --numOfClnt; --i;
+                    printf("Server> client 종료\n");
                     continue;
                 }
 
