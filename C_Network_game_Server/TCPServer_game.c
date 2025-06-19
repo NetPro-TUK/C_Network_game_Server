@@ -10,7 +10,6 @@
 #define BUF_SIZE    512      // 임시 버퍼 크기
 
 void ErrorHandling(char *message);
-int calculation(int opndCnt, int data[], char op);
 DWORD WINAPI ProcessClient(LPVOID arg);
 
 int main(void)
@@ -45,7 +44,7 @@ int main(void)
 		ErrorHandling("bind() error");
 	
 	// 리슨
-	listen(hServSock, 3);
+	listen(hServSock, MAX_CLIENT);
 	
 	// 서버 소켓에 대한 이벤트 생성 및 설정
 	eventArr[0] = WSACreateEvent();
