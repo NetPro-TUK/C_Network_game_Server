@@ -69,6 +69,9 @@ int main(void)
 		LOG_INFO("페이로드 전송 완료");
 	}
 
+	recv_full(hSocket, &header, sizeof(header));
+	printf("Client> 헤더 수신 완료: type = %d, length = %d\n", header.type, ntohl(header.length));
+
 	closesocket(hSocket);
 	printf("Client> close socket...\n");
 	WSACleanup();

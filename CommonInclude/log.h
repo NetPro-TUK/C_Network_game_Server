@@ -38,12 +38,9 @@
         strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", &tm_info);
 
         // 로그 출력: [시간][LEVEL][파일:라인] 메시지
-        printf("[%s][%s][%s:%d] \n%s\n",
-            time_buf,
-            log_level_name(level),
-            file,
-            line,
-            msg);
+        //printf("[%s][%s][%s:%d] \n%s\n", time_buf, log_level_name(level), file, line, msg);
+        printf("%s\n", msg);
+
     }
 
     // 편의 매크로 정의

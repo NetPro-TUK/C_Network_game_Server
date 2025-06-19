@@ -24,7 +24,7 @@
     // x, y: 위치 좌표
     typedef struct {
         uint32_t entityId;
-        float    x, y;
+        int    x, y;
     } PayloadStateUpdate;
 
     // 액션 이벤트 페이로드 구조체
@@ -34,7 +34,7 @@
     typedef struct {
         uint32_t shooterId;
         uint32_t bulletId;
-        float    dirX, dirY;
+        int    dirX, dirY;
     } PayloadActionEvent;
 
 #endif /* PROTOCOL_H */
