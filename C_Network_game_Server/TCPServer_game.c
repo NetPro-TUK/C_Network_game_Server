@@ -7,6 +7,7 @@
 #include "log.h"
 
 #define MAX_CLIENT  64       // 최대 클라이언트 수
+#define MAX_ENTITY  256     // 최대 엔티티 수
 #define BUF_SIZE    512      // 임시 버퍼 크기
 
 void ErrorHandling(char *message);
@@ -28,7 +29,9 @@ int main(void)
 
 	SOCKET sockArr[MAX_CLIENT];       // 클라이언트 소켓 저장 배열
 	WSAEVENT eventArr[MAX_CLIENT];    // 각 소켓에 대한 이벤트 핸들 저장 배열
-	int numOfClnt = 0;
+    int numOfClnt = 0;
+    Entity entityArr[MAX_ENTITY];
+    int entityCount = 0;
 
 	// WinSock 초기화
 	if(WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
@@ -114,8 +117,28 @@ int main(void)
                     ret = recv_full(sockArr[i], &payload, sizeof(payload));
                     if (ret > 0) {
                         uint32_t id = ntohl(payload.entityId);
-                        printf("[STATE_UPDATE] id=%u, pos=(%d, %d)\n",
-                            id, payload.x, payload.y);
+
+                        // 기존에 존재하는 엔티티인지 확인
+                        int found = 0;
+                        for (int k = 0; k < entityCount; ++k) {
+                            if (entityArr[k].entityId == id) {
+                                entityArr[k].x = payload.x;
+                                entityArr[k].y = payload.y;
+                                found = 1;
+                                break;
+                            }
+                        }
+
+                        // 없으면 새로 추가
+                        if (!found && entityCount < MAX_ENTITY) {
+                            entityArr[entityCount].entityId = id;
+                            entityArr[entityCount].type = type;
+                            entityArr[entityCount].x = payload.x;
+                            entityArr[entityCount].y = payload.y;
+                            entityCount++;
+                        }
+
+                        printf("[STATE_UPDATE] id=%u, pos=(%d, %d)\n", id, payload.x, payload.y);
                     }
                 }
                 else {
