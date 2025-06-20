@@ -1,4 +1,4 @@
-#define _CRT_SECURE_NO_WARNINGS
+ï»¿#define _CRT_SECURE_NO_WARNINGS
 #include <winsock2.h>
 #include <conio.h>
 #include <stdio.h>
@@ -6,17 +6,58 @@
 
 #include "protocol.h"
 #include "net_client.h"
+#include "net_utils.h"
 #include "render.h"
 
-// °ø°İÀÚ ÀÚµ¿ ÀÌµ¿ Ã³¸®
+// ì „ì—­ ìƒíƒœ ë³€ìˆ˜ (ìˆ˜ì‹  ìŠ¤ë ˆë“œì™€ ê³µìœ )
+volatile int join_result_ready = 0;
+volatile uint32_t my_entity_id = 0;
+volatile int player_rejected = 0;
+
+// ìˆ˜ì‹  ìŠ¤ë ˆë“œ: ì„œë²„ì—ì„œ ì˜¤ëŠ” ë©”ì‹œì§€ë¥¼ ì²˜ë¦¬
+DWORD WINAPI recv_server_thread(LPVOID arg) {
+    SOCKET sock = *(SOCKET*)arg;
+
+    while (1) {
+        MsgHeader header;
+        int result = recv_full(sock, &header, sizeof(header));
+        if (result <= 0) {
+            printf("[Thread] ì„œë²„ ì—°ê²° ì¢…ë£Œ ê°ì§€ (recv = %d), ìŠ¤ë ˆë“œ ì¢…ë£Œ\n", result);
+            break; 
+        }
+
+        uint32_t len = ntohl(header.length);
+
+        if (header.type == MSG_JOIN_ACK && len == sizeof(PayloadJoinAck)) {
+            PayloadJoinAck payload;
+            recv_full(sock, &payload, sizeof(payload));
+            my_entity_id = ntohl(payload.entityId);
+            join_result_ready = 1;
+        }
+        else if (header.type == MSG_GAME_EVENT && len == sizeof(PayloadGameEvent)) {
+            PayloadGameEvent payload;
+            recv_full(sock, &payload, sizeof(payload));
+            if (payload.event_type == PLAYER_REJECTED) {
+                player_rejected = 1;
+                join_result_ready = 1;
+            }
+        }
+        else {
+            char dummy[512];
+            if (len <= sizeof(dummy)) recv_full(sock, dummy, len);
+        }
+    }
+
+    return 0; // ì†Œì¼“ì€ mainì—ì„œë§Œ ë‹«ê¸°
+}
+
+
+// ê³µê²©ì ìë™ ì´ë™ ì²˜ë¦¬ í•¨ìˆ˜
 void auto_move_attacker(SOCKET sock, uint32_t id, int* x, int* y) {
     erase_attacker(*x, *y);
-
-    // xÁÂÇ¥ Áõ°¡ ¹× °æ°è Ã³¸®
     (*x)++;
     if (*x > 78) *x = 1;
 
-    // yÃà ¹«ÀÛÀ§ ÀÌµ¿
     int dir = rand() % 2 == 0 ? -1 : 1;
     *y += dir;
     if (*y < 1) *y = 1;
@@ -26,30 +67,57 @@ void auto_move_attacker(SOCKET sock, uint32_t id, int* x, int* y) {
     send_state_update(sock, id, *x, *y);
 }
 
-
 int main(void) {
     srand((unsigned int)time(NULL));
 
-    // 1. ¿ªÇÒ ¼±ÅÃ
-    int role = 0;
-    while (role != 1 && role != 2) {
-        printf("¿ªÇÒÀ» ¼±ÅÃÇÏ¼¼¿ä: [1] ¹æ¾îÀÚ (DEFENDER), [2] °ø°İÀÚ (ATTACKER): ");
-        scanf("%d", &role);
-    }
-
-    // 2. ¼­¹ö ¿¬°á
+    // 1. ì„œë²„ ì—°ê²°
     SOCKET hSocket = connect_to_server("127.0.0.1", 9000);
     if (hSocket == INVALID_SOCKET) return 1;
 
-    // 3. JOIN ¹× ³» ID ¼ö½Å
-    uint32_t myId = send_join_and_get_id(hSocket, role);
+    // 2. ìˆ˜ì‹  ìŠ¤ë ˆë“œ ì‹œì‘
+    CreateThread(NULL, 0, recv_server_thread, &hSocket, 0, NULL);
 
-    // 4. ÄÜ¼Ö ÃÊ±âÈ­
+    // 3. ì—­í•  ì„ íƒ ë° JOIN ì²˜ë¦¬
+    int role = 0;
+    uint32_t myId = 0;
+
+    while (1) {
+        printf("ì—­í• ì„ ì„ íƒí•˜ì„¸ìš”: [1] ë°©ì–´ì (DEFENDER), [2] ê³µê²©ì (ATTACKER): ");
+        scanf("%d", &role);
+
+        if (role != 1 && role != 2) continue;
+
+        // ê¸°ì¡´ ì†Œì¼“ ë‹«ê³  ì¬ì—°ê²°
+        closesocket(hSocket);
+        hSocket = connect_to_server("127.0.0.1", 9000);
+        if (hSocket == INVALID_SOCKET) return 1;
+
+        // ìˆ˜ì‹  ìŠ¤ë ˆë“œ ë‹¤ì‹œ ì‹œì‘
+        CreateThread(NULL, 0, recv_server_thread, &hSocket, 0, NULL);
+
+        // ìš”ì²­ ì „ì†¡
+        send_join_and_get_id(hSocket, role);
+
+        // ì‘ë‹µ ëŒ€ê¸°
+        join_result_ready = 0;
+        while (!join_result_ready) Sleep(10);
+
+        if (player_rejected) {
+            player_rejected = 0;
+            continue;
+        }
+
+        myId = my_entity_id;
+        break;
+    }
+
+
+    // 4. ì½˜ì†” ì´ˆê¸°í™”
     hide_cursor();
     system("cls");
     draw_border();
 
-    // 5. ÃÊ±â À§Ä¡ ¼³Á¤
+    // 5. ì´ˆê¸° ìœ„ì¹˜ ì„¤ì •
     int x = (role == 1) ? 70 : 1;
     int y = FIELD_HEIGHT / 2;
 
@@ -57,11 +125,10 @@ int main(void) {
     else draw_attacker(x, y);
 
     gotoxy(0, FIELD_HEIGHT);
-    printf("%s Á¶ÀÛ Áß. ESC ¶Ç´Â Á¾·á Å°·Î ³¡³À´Ï´Ù.\n", role == 1 ? "¹æ¾îÀÚ" : "°ø°İÀÚ");
+    printf("%s ì¡°ì‘ ì¤‘. ESC ë˜ëŠ” ì¢…ë£Œ í‚¤ë¡œ ëëƒ…ë‹ˆë‹¤.\n", role == 1 ? "ë°©ì–´ì" : "ê³µê²©ì");
 
-    // 6. °ÔÀÓ ·çÇÁ (¿ªÇÒ¿¡ µû¶ó ºĞ±â)
+    // 6. ê²Œì„ ë£¨í”„ (ì—­í• ì— ë”°ë¼ ë¶„ê¸°)
     if (role == 1) {
-        // ¹æ¾îÀÚ: ¹æÇâÅ° ¡è ¡é
         while (1) {
             if (_kbhit()) {
                 int key = _getch();
@@ -81,22 +148,21 @@ int main(void) {
         }
     }
     else {
-        // °ø°İÀÚ: ÀÚµ¿ ÀÌµ¿ + ESC Á¾·á Áö¿ø
         while (1) {
             if (_kbhit()) {
                 int key = _getch();
-                if (key == 27) break;  // ESC to exit
+                if (key == 27) break;
             }
             auto_move_attacker(hSocket, myId, &x, &y);
-            Sleep(300);  // °ø°İÀÚ ÀÌµ¿ °£°İ
+            Sleep(300);
         }
     }
 
-    // 7. Á¾·á Ã³¸®
+    // 7. ì¢…ë£Œ ì²˜ë¦¬
     show_cursor();
     closesocket(hSocket);
     WSACleanup();
     system("cls");
-    printf("\nClient> Á¾·áµÇ¾ú½À´Ï´Ù.\n");
+    printf("\nClient> ì¢…ë£Œë˜ì—ˆìŠµë‹ˆë‹¤.\n");
     return 0;
 }

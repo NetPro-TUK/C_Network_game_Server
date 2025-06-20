@@ -10,7 +10,7 @@ SOCKET connect_to_server(const char* ip, int port);
 
 // 클라이언트의 역할(PLAYER or ATTACKER)을 서버에 전송하고,
 // 서버가 부여한 고유 entity ID를 받아서 반환
-uint32_t send_join_and_get_id(SOCKET sock, int role);
+void send_join_and_get_id(SOCKET sock, int role);
 
 // 클라이언트의 현재 위치(x, y) 정보를 서버에 전송
 void send_state_update(SOCKET sock, uint32_t id, int x, int y);
