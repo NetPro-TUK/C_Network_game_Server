@@ -1,11 +1,11 @@
 #include "entity.h"
 #include <string.h>
-#include <winsock2.h>
 
 Entity entityArr[MAX_ENTITY];
 int entityCount = 0;
-extern int has_player; // game_logic.h에서 정의된 전역 변수
+extern int has_defender; // game_logic.h에서 정의된 전역 변수
 static uint32_t nextEntityId = 1;
+
 
 void init_entity_system() {
     memset(entityArr, 0, sizeof(entityArr));
@@ -14,7 +14,7 @@ void init_entity_system() {
 }
 
 // 엔티티 생성 함수
-Entity* create_entity(EntityType type, uint32_t owner_id, SOCKET sock) {
+Entity* create_entity(EntityType type, uint32_t owner_id) {
     if (entityCount >= MAX_ENTITY) return NULL;
 
     Entity* ent = &entityArr[entityCount++];
@@ -24,7 +24,6 @@ Entity* create_entity(EntityType type, uint32_t owner_id, SOCKET sock) {
     ent->x = ent->y = 0;
     ent->vx = ent->vy = 0;
     ent->alive = 1;
-    ent->sock = sock;
     return ent;
 }
 
