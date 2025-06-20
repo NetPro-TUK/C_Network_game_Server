@@ -8,7 +8,6 @@
 #include "net_client.h"
 #include "render.h"
 
-
 // 공격자 자동 이동 처리
 void auto_move_attacker(SOCKET sock, uint32_t id, int* x, int* y) {
     erase_attacker(*x, *y);
@@ -47,8 +46,8 @@ int main(void) {
     system("cls");
     draw_border();
 
-    // 초기 위치 설정
-    int x = (role == 1) ? 10 : FIELD_WIDTH - 10;
+    // 5. 초기 위치 설정
+    int x = (role == 1) ? 70 : 1;
     int y = FIELD_HEIGHT / 2;
 
     if (role == 1) draw_player(x, y);
@@ -57,7 +56,7 @@ int main(void) {
     gotoxy(0, FIELD_HEIGHT);
     printf("%s 조작 중. ESC 또는 종료 키로 끝냅니다.\n", role == 1 ? "방어자" : "공격자");
 
-    // 5. 게임 루프 (역할에 따라 분기)
+    // 6. 게임 루프 (역할에 따라 분기)
     if (role == 1) {
         // 방어자: 방향키 ↑ ↓
         while (1) {
@@ -86,7 +85,7 @@ int main(void) {
         }
     }
 
-    // 6. 종료 처리
+    // 7. 종료 처리
     show_cursor();
     closesocket(hSocket);
     WSACleanup();
