@@ -13,17 +13,19 @@
 volatile int join_result_ready = 0;
 volatile uint32_t my_entity_id = 0;
 volatile int player_rejected = 0;
+volatile int socket_disconnected = 0;
 
-// 수신 스레드: 서버에서 오는 메시지를 처리
+// 수신 스레드
 DWORD WINAPI recv_server_thread(LPVOID arg) {
     SOCKET sock = *(SOCKET*)arg;
 
     while (1) {
         MsgHeader header;
-        int result = recv_full(sock, &header, sizeof(header));
-        if (result <= 0) {
-            printf("[Thread] 서버 연결 종료 감지 (recv = %d), 스레드 종료\n", result);
-            break; 
+        int ret = recv_full(sock, &header, sizeof(header));
+        if (ret <= 0) {
+            printf("[Thread] 서버 연결 종료 감지 (recv = %d), 스레드 종료\n", ret);
+            socket_disconnected = 1;
+            break;
         }
 
         uint32_t len = ntohl(header.length);
@@ -43,16 +45,16 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
             }
         }
         else {
+            // 기타 메시지 무시
             char dummy[512];
             if (len <= sizeof(dummy)) recv_full(sock, dummy, len);
         }
     }
 
-    return 0; // 소켓은 main에서만 닫기
+    return 0;
 }
 
-
-// 공격자 자동 이동 처리 함수
+// 공격자 자동 이동
 void auto_move_attacker(SOCKET sock, uint32_t id, int* x, int* y) {
     erase_attacker(*x, *y);
     (*x)++;
@@ -70,54 +72,60 @@ void auto_move_attacker(SOCKET sock, uint32_t id, int* x, int* y) {
 int main(void) {
     srand((unsigned int)time(NULL));
 
-    // 1. 서버 연결
-    SOCKET hSocket = connect_to_server("127.0.0.1", 9000);
-    if (hSocket == INVALID_SOCKET) return 1;
-
-    // 2. 수신 스레드 시작
-    CreateThread(NULL, 0, recv_server_thread, &hSocket, 0, NULL);
-
-    // 3. 역할 선택 및 JOIN 처리
     int role = 0;
     uint32_t myId = 0;
+    SOCKET hSocket;
 
     while (1) {
+        // 1. 역할 선택
         printf("역할을 선택하세요: [1] 방어자 (DEFENDER), [2] 공격자 (ATTACKER): ");
         scanf("%d", &role);
-
         if (role != 1 && role != 2) continue;
 
-        // 기존 소켓 닫고 재연결
-        closesocket(hSocket);
+        // 2. 서버 연결 (매번 새로 연결)
         hSocket = connect_to_server("127.0.0.1", 9000);
-        if (hSocket == INVALID_SOCKET) return 1;
+        if (hSocket == INVALID_SOCKET) {
+            printf("서버 연결 실패. 종료합니다.\n");
+            return 1;
+        }
 
-        // 수신 스레드 다시 시작
+        // 3. 수신 스레드 시작
+        join_result_ready = 0;
+        player_rejected = 0;
+        socket_disconnected = 0;
         CreateThread(NULL, 0, recv_server_thread, &hSocket, 0, NULL);
 
-        // 요청 전송
+        // 4. JOIN 요청
         send_join_and_get_id(hSocket, role);
 
-        // 응답 대기
-        join_result_ready = 0;
-        while (!join_result_ready) Sleep(10);
+        // 5. 결과 대기
+        while (!join_result_ready && !socket_disconnected) {
+            Sleep(10);
+        }
+
+        if (socket_disconnected) {
+            printf("서버와 연결이 끊겼습니다. 다시 시도하세요.\n");
+            closesocket(hSocket);
+            WSACleanup();
+            continue;
+        }
 
         if (player_rejected) {
-            player_rejected = 0;
+            printf("[알림] 방어자가 이미 존재합니다. 다시 선택하세요.\n");
+            closesocket(hSocket);
+            WSACleanup();
             continue;
         }
 
         myId = my_entity_id;
-        break;
+        break;  // 성공적으로 join
     }
 
-
-    // 4. 콘솔 초기화
+    // 6. 콘솔 초기화
     hide_cursor();
     system("cls");
     draw_border();
 
-    // 5. 초기 위치 설정
     int x = (role == 1) ? 70 : 1;
     int y = FIELD_HEIGHT / 2;
 
@@ -127,20 +135,18 @@ int main(void) {
     gotoxy(0, FIELD_HEIGHT);
     printf("%s 조작 중. ESC 또는 종료 키로 끝냅니다.\n", role == 1 ? "방어자" : "공격자");
 
-    // 6. 게임 루프 (역할에 따라 분기)
+    // 7. 게임 루프
     if (role == 1) {
         while (1) {
             if (_kbhit()) {
                 int key = _getch();
                 if (key == 27) break;
-
                 if (key == 224) {
                     key = _getch();
                     erase_defender(x, y);
                     if (key == 72 && y > 1) y--;
                     else if (key == 80 && y < FIELD_HEIGHT - 2) y++;
                     draw_defender(x, y);
-
                     send_state_update(hSocket, myId, x, y);
                 }
             }
@@ -158,7 +164,7 @@ int main(void) {
         }
     }
 
-    // 7. 종료 처리
+    // 8. 종료
     show_cursor();
     closesocket(hSocket);
     WSACleanup();
