@@ -32,13 +32,21 @@ int main() {
             }
 			// 클라이언트로부터 데이터 수신 이벤트가 발생한 경우
             else if (netEvents.lNetworkEvents & FD_READ) {
-				if (recv_and_dispatch(i) < 0) {     // 수신 오류 발생
+                int r = recv_and_dispatch(i);
+                if (r < 0) {
+                    int err = WSAGetLastError();
+                    if (err == WSAEWOULDBLOCK) {
+                        // 아직 읽을 데이터가 없으니, 소켓 닫지 않고 다음 이벤트 대기
+                        continue;
+                    }
+                    // 그 외 오류(정상 종료 포함)일 때만 소켓 정리
                     closesocket(sockArr[i]);
                     WSACloseEvent(eventArr[i]);
                     sockArr[i] = sockArr[numOfClnt - 1];
                     eventArr[i] = eventArr[numOfClnt - 1];
-                    --numOfClnt; --i;
-                    printf("Server> client 종료\n");
+                    --numOfClnt;
+                    --i;
+                    printf("Server> client 종료 (FD_READ, err=%d)\n", err);
                 }
             }
             // 클라이언트가 정상 종료된 경우
