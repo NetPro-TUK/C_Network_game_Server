@@ -78,8 +78,12 @@ int main(void) {
         }
     }
     else {
-        // 공격자: 자동 이동
+        // 공격자: 자동 이동 + ESC 종료 지원
         while (1) {
+            if (_kbhit()) {
+                int key = _getch();
+                if (key == 27) break;  // ESC to exit
+            }
             auto_move_attacker(hSocket, myId, &x, &y);
             Sleep(300);  // 공격자 이동 간격
         }
