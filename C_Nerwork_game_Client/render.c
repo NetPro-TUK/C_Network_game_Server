@@ -25,13 +25,13 @@ void show_cursor() {
 }
 
 // 플레이어 캐릭터를 (x, y) 위치에 출력하는 함수
-void draw_player(int x, int y) {
+void draw_defender(int x, int y) {
     gotoxy(x, y);           // 지정 좌표로 이동
     putchar(PLAYER_CHAR);   // 플레이어 문자 출력 (기본값: 'A')
 }
 
 // 플레이어 캐릭터를 지우는 함수 (공백으로 덮어쓰기)
-void erase_player(int x, int y) {
+void erase_defender(int x, int y) {
     gotoxy(x, y);
     putchar(' ');    // 기존 위치를 공백으로 출력해서 삭제
 }

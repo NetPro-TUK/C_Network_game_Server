@@ -30,7 +30,7 @@ int main(void) {
     // 1. 역할 선택
     int role = 0;
     while (role != 1 && role != 2) {
-        printf("역할을 선택하세요: [1] 방어자 (PLAYER), [2] 공격자 (ATTACKER): ");
+        printf("역할을 선택하세요: [1] 방어자 (DEFENDER), [2] 공격자 (ATTACKER): ");
         scanf("%d", &role);
     }
 
@@ -50,7 +50,7 @@ int main(void) {
     int x = (role == 1) ? 70 : 1;
     int y = FIELD_HEIGHT / 2;
 
-    if (role == 1) draw_player(x, y);
+    if (role == 1) draw_defender(x, y);
     else draw_attacker(x, y);
 
     gotoxy(0, FIELD_HEIGHT);
@@ -66,10 +66,10 @@ int main(void) {
 
                 if (key == 224) {
                     key = _getch();
-                    erase_player(x, y);
+                    erase_defender(x, y);
                     if (key == 72 && y > 1) y--;
                     else if (key == 80 && y < FIELD_HEIGHT - 2) y++;
-                    draw_player(x, y);
+                    draw_defender(x, y);
 
                     send_state_update(hSocket, myId, x, y);
                 }
