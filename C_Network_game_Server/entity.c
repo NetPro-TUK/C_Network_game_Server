@@ -1,5 +1,6 @@
 #include "entity.h"
 #include <string.h>
+#include <winsock2.h>
 
 Entity entityArr[MAX_ENTITY];
 int entityCount = 0;
@@ -13,7 +14,7 @@ void init_entity_system() {
 }
 
 // 엔티티 생성 함수
-Entity* create_entity(EntityType type, uint32_t owner_id) {
+Entity* create_entity(EntityType type, uint32_t owner_id, SOCKET sock) {
     if (entityCount >= MAX_ENTITY) return NULL;
 
     Entity* ent = &entityArr[entityCount++];
@@ -23,6 +24,7 @@ Entity* create_entity(EntityType type, uint32_t owner_id) {
     ent->x = ent->y = 0;
     ent->vx = ent->vy = 0;
     ent->alive = 1;
+    ent->sock = sock;
     return ent;
 }
 
