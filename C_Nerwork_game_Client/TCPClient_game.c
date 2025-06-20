@@ -96,6 +96,7 @@ int main(void) {
     show_cursor();
     closesocket(hSocket);
     WSACleanup();
+    system("cls");
     printf("\nClient> 종료되었습니다.\n");
     return 0;
 }
