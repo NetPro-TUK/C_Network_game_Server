@@ -131,7 +131,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="entity.c" />
+    <ClCompile Include="game_logic.c" />
+    <ClCompile Include="net_server.c" />
     <ClCompile Include="TCPServer_game.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="entity.h" />
+    <ClInclude Include="game_logic.h" />
+    <ClInclude Include="net_server.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

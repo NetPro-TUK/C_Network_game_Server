@@ -18,5 +18,25 @@
     <ClCompile Include="TCPServer_game.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="net_server.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="entity.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="game_logic.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="net_server.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="entity.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="game_logic.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
