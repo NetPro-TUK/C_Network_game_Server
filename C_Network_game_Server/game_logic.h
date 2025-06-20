@@ -8,7 +8,7 @@
 #define SCREEN_WIDTH 100
 #define SCREEN_HEIGHT 150
 
-// 게임 로직 처리 함수 선언
+// 게임 시작 이벤트 처리 함수
 void handle_join(SOCKET client_fd, PayloadJoin* payload);
 
 // 총알 발사 이벤트 처리 함수

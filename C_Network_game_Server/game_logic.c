@@ -5,10 +5,12 @@
 #include "log.h"
 #include "net_utils.h"
 
+int has_player;  // 전역 또는 전역 배열로 추적
 
 // 클라이언트가 JOIN 요청을 보냈을 때 처리하는 함수
 void handle_join(SOCKET client_fd, PayloadJoin* payload) {
     EntityType type;
+
     if (payload->role == 1)
         type = ENTITY_PLAYER;
     else if (payload->role == 2)
@@ -18,16 +20,32 @@ void handle_join(SOCKET client_fd, PayloadJoin* payload) {
         return;
     }
 
+    // 방어자 중복 체크
+    if (type == ENTITY_PLAYER && has_player) {
+        printf("Server> 이미 방어자가 존재합니다. 요청 거부.\n");
+
+        MsgHeader h = { .type = MSG_GAME_EVENT, .length = htonl(sizeof(PayloadGameEvent)) };
+        PayloadGameEvent event = { .event_type = PLAYER_REJECTED };
+        send_full(client_fd, &h, sizeof(h));
+        send_full(client_fd, &event, sizeof(event));
+
+        closesocket(client_fd);
+        return;
+    }
+
+    // 엔터티 생성
     Entity* ent = create_entity(type, client_fd);
     if (!ent) {
         LOG_ERROR("엔터티 생성 실패");
         return;
     }
 
+    if (type == ENTITY_PLAYER) has_player = 1;
+
     printf("Server> JOIN: client_fd=%d → entity_id=%u [%s]\n", client_fd, ent->entity_id,
         type == ENTITY_PLAYER ? "PLAYER" : "ATTACKER");
 
-    // 🔹 클라이언트에게 entity_id를 응답으로 보냄
+    // 클라이언트에게 entity_id를 응답으로 보냄
     PayloadJoinAck ackPayload;
     ackPayload.entityId = htonl(ent->entity_id);
     ackPayload.role = type;

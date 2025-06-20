@@ -10,6 +10,9 @@ void hide_cursor();
 void show_cursor();
 void draw_player(int x, int y);
 void erase_player(int x, int y);
+void draw_border();
+void draw_attacker(int x, int y);
+void erase_attacker(int x, int y);
 
 #endif
 

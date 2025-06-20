@@ -86,3 +86,25 @@ void send_state_update(SOCKET sock, uint32_t id, int x, int y) {
     send_full(sock, &stateHeader, sizeof(stateHeader));
     send_full(sock, &statePayload, sizeof(statePayload));
 }
+
+// 게임 이벤트 메세지
+void handle_server_message(MsgHeader* header, void* payload) {
+    if (header->type == MSG_GAME_EVENT) {
+        PayloadGameEvent* gamePayload = (PayloadGameEvent*)payload;
+
+        switch (gamePayload->event_type) {
+        case GAME_OVER:
+            printf("게임 종료!\n");
+            break;
+        case GAME_WIN:
+            printf("게임 승리!\n");
+            break;
+        case PLAYER_REJECTED:
+            printf("[알림] 방어자는 이미 존재합니다. 게임에 참여할 수 없습니다.\n");
+            exit(0);  // 또는 return; 등 적절한 조치
+        default:
+            printf("알 수 없는 게임 이벤트 수신: %d\n", gamePayload->event_type);
+            break;
+        }
+    }
+}

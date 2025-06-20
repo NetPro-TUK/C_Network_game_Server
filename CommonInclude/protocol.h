@@ -12,6 +12,18 @@ typedef enum {
     MSG_JOIN_ACK = 5,       // 클라에게 en티티 ID 전달용
 } MsgType;
 
+// 게임 이벤트 타입 정의
+typedef enum {
+    GAME_OVER = 1,
+    GAME_WIN = 2,
+    PLAYER_REJECTED = 3
+} GameEventType;
+
+// 게임 이벤트 페이로드 구조체
+typedef struct {
+    GameEventType event_type;  // 1: 게임 오버, 2: 승리 등, 3: 방어자 중복 요청 거부
+} PayloadGameEvent;
+
 // 메시지 헤더 구조체
 typedef struct {
     uint32_t length;    // 페이로드 길이 (네트워크 바이트 순서)
@@ -41,9 +53,5 @@ typedef struct {
     int    dirX, dirY;      // 방향 벡터 (예: -1, 0, 1) 
 } PayloadActionEvent;
 
-// 게임 이벤트 페이로드 구조체
-typedef struct {
-    int event_type;  // 1: 게임 오버, 2: 승리 등
-} PayloadGameEvent;
 
 #endif /* PROTOCOL_H */
