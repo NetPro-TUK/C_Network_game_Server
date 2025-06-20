@@ -43,13 +43,14 @@ int main() {
             }
             // 클라이언트가 정상 종료된 경우
             else if (netEvents.lNetworkEvents & FD_CLOSE) {
-                closesocket(sockArr[i]);
-                WSACloseEvent(eventArr[i]);
-                // 배열에서 제거
-                sockArr[i] = sockArr[numOfClnt - 1];
-                eventArr[i] = eventArr[numOfClnt - 1];
-                --numOfClnt; --i;
-                printf("Server> client 종료\n");
+                if (sockArr[i] != INVALID_SOCKET) {
+                    closesocket(sockArr[i]);
+                    WSACloseEvent(eventArr[i]);
+                    sockArr[i] = sockArr[numOfClnt - 1];
+                    eventArr[i] = eventArr[numOfClnt - 1];
+                    --numOfClnt; --i;
+                    printf("Server> client 종료 (FD_CLOSE)\n");
+                }
             }
         }
 
