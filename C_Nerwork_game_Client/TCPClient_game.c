@@ -1,145 +1,61 @@
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <winsock2.h>
-#include <windows.h>
 #include <conio.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <windows.h>
 
 #include "protocol.h"
-#include "net_utils.h"
-#include "log.h"
-
-#pragma comment(lib, "Ws2_32.lib")
-
-#define FIELD_WIDTH 80
-#define FIELD_HEIGHT 25
-#define PLAYER_CHAR 'A'
-
-void gotoxy(int x, int y);
-void hide_cursor();
-void draw_player(int x, int y);
-void erase_player(int x, int y);
-void ErrorHandling(char* message);
+#include "net_client.h"
+#include "render.h"
 
 int main(void)
 {
-    WSADATA wsaData;
-    SOCKET hSocket;
-    SOCKADDR_IN servAdr;
+    // 1. 서버 연결
+    SOCKET hSocket = connect_to_server("127.0.0.1", 9000);
+    if (hSocket == INVALID_SOCKET) return 1;
 
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
-        ErrorHandling("WSAStartup() error!");
+    // 2. JOIN 메시지 전송 및 내 ID 수신
+    int role = 1;  // 방어자 고정
+    uint32_t myId = send_join_and_get_id(hSocket, role);
 
-    hSocket = socket(PF_INET, SOCK_STREAM, 0);
-    if (hSocket == INVALID_SOCKET)
-        ErrorHandling("socket() error");
-
-    memset(&servAdr, 0, sizeof(servAdr));
-    servAdr.sin_family = AF_INET;
-    servAdr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    servAdr.sin_port = htons(9000);
-
-    if (connect(hSocket, (SOCKADDR*)&servAdr, sizeof(servAdr)) == SOCKET_ERROR) {
-        printf("<ERROR> Client. connect() 실행 오류.\n");
-        closesocket(hSocket);
-        WSACleanup();
-        return 0;
-    }
-
-    int role = 1; // 방어자 고정
-    PayloadJoin joinPayload = { .role = role };
-    MsgHeader joinHeader = {
-        .type = MSG_JOIN,
-        .length = htonl(sizeof(joinPayload))
-    };
-
-    send_full(hSocket, &joinHeader, sizeof(joinHeader));
-    send_full(hSocket, &joinPayload, sizeof(joinPayload));
-
-    MsgHeader ackHeader;
-    recv_full(hSocket, &ackHeader, sizeof(ackHeader));
-    if (ackHeader.type != MSG_JOIN_ACK || ntohl(ackHeader.length) != sizeof(PayloadJoinAck)) {
-        printf("Client> 잘못된 MSG_JOIN_ACK 수신\n");
-        closesocket(hSocket); WSACleanup(); return 1;
-    }
-
-    PayloadJoinAck ackPayload;
-    recv_full(hSocket, &ackPayload, sizeof(ackPayload));
-    uint32_t myId = ntohl(ackPayload.entityId);
-
+    // 3. 초기 플레이어 위치
     int player_x = 10;
     int player_y = FIELD_HEIGHT / 2;
 
+    // 4. 콘솔 초기화
     hide_cursor();
     system("cls");
     draw_player(player_x, player_y);
     gotoxy(0, FIELD_HEIGHT);
     printf("↑ ↓ 방향키로 이동. ESC로 종료\n");
 
+    // 5. 입력 처리 루프
     while (1) {
         if (_kbhit()) {
             int key = _getch();
-            if (key == 27) break;
+            if (key == 27) break;  // ESC = 종료
 
             if (key == 224) {
-                key = _getch();
+                key = _getch();  // 방향키 실제 코드
+
+                // 이동 처리
                 erase_player(player_x, player_y);
-                if (key == 72 && player_y > 0) player_y--; // ↑
-                else if (key == 80 && player_y < FIELD_HEIGHT - 1) player_y++; // ↓
+                if (key == 72 && player_y > 0) player_y--;                         // ↑
+                else if (key == 80 && player_y < FIELD_HEIGHT - 1) player_y++;   // ↓
                 draw_player(player_x, player_y);
 
-                // 서버로 상태 전송
-                PayloadStateUpdate statePayload = {
-                    .entityId = htonl(myId),
-                    .x = player_x,
-                    .y = player_y
-                };
-                MsgHeader stateHeader = {
-                    .type = MSG_STATE_UPDATE,
-                    .length = htonl(sizeof(statePayload))
-                };
-                send_full(hSocket, &stateHeader, sizeof(stateHeader));
-                send_full(hSocket, &statePayload, sizeof(statePayload));
+                // 상태 업데이트 서버 전송
+                send_state_update(hSocket, myId, player_x, player_y);
             }
         }
 
-        Sleep(50);
+        Sleep(50);  // 프레임 간격 (20 FPS)
     }
 
+    // 6. 종료 처리
+    show_cursor();
     closesocket(hSocket);
-    CONSOLE_CURSOR_INFO cursorInfo = { 0, };
-    cursorInfo.bVisible = 1;
-    cursorInfo.dwSize = 1;
-    SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursorInfo);
-    printf("\nClient> close socket...\n");
     WSACleanup();
+    printf("\nClient> 종료되었습니다.\n");
+
     return 0;
-}
-
-void gotoxy(int x, int y) {
-    COORD pos = { (SHORT)x, (SHORT)y };
-    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
-}
-
-void hide_cursor() {
-    CONSOLE_CURSOR_INFO cursorInfo = { 0, };
-    cursorInfo.bVisible = 0;
-    cursorInfo.dwSize = 1;
-    SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursorInfo);
-}
-
-void draw_player(int x, int y) {
-    gotoxy(x, y);
-    putchar(PLAYER_CHAR);
-}
-
-void erase_player(int x, int y) {
-    gotoxy(x, y);
-    putchar(' ');
-}
-
-void ErrorHandling(char* message) {
-    fputs(message, stderr);
-    fputc('\n', stderr);
-    exit(1);
 }

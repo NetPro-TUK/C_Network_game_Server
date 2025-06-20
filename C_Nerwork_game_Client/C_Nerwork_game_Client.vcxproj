@@ -131,7 +131,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="net_client.c" />
+    <ClCompile Include="render.c" />
     <ClCompile Include="TCPClient_game.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="net_client.h" />
+    <ClInclude Include="render.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

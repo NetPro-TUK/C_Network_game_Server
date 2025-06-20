@@ -18,5 +18,19 @@
     <ClCompile Include="TCPClient_game.c">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="render.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="net_client.c">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="net_client.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="render.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
