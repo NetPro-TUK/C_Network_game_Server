@@ -1,8 +1,11 @@
 ﻿#include <time.h>
+#include "entity.h"
 #include "net_server.h"
 #include "game_logic.h"
 
 #define TICK_INTERVAL_MS 50  // 게임 틱 간격: 20 FPS 기준 (50ms 간격)
+
+void reset_defender_if_match(SOCKET closingSock);
 
 int main() {
     // 서버 소켓 초기화 및 바인딩
@@ -37,6 +40,7 @@ int main() {
                     int err = WSAGetLastError();
                     if (err == WSAEWOULDBLOCK) continue; // 아직 읽을 데이터가 없으니, 소켓 닫지 않고 다음 이벤트 대기
                     // 그 외 오류일 때 소켓 정리
+                    reset_defender_if_match(sockArr[i]);
                     remove_client_at(i);
                     --i;
                     printf("Server> client 종료 (FD_READ, err=%d)\n", err);
@@ -45,6 +49,7 @@ int main() {
             // 클라이언트가 정상 종료된 경우
             else if (netEvents.lNetworkEvents & FD_CLOSE) {
                 if (sockArr[i] != INVALID_SOCKET) {
+                    reset_defender_if_match(sockArr[i]);
                     remove_client_at(i);
                     --i;
                     printf("Server> client 종료 (FD_CLOSE)\n");
@@ -66,4 +71,20 @@ int main() {
     closesocket(serverSock);
     WSACleanup();
     return 0;
+}
+
+// 클라이언트 종료 전: 방어자인지 확인하고 리셋
+void reset_defender_if_match(SOCKET closingSock) {
+    for (int i = 0; i < entityCount; ++i) {
+        if (!entityArr[i].alive) continue;
+
+        if (entityArr[i].sock == closingSock) {
+            if (entityArr[i].owner_client_id == defender_owner_id) {
+                defender_owner_id = 0;
+                printf("Server> 방어자 종료 → defender_owner_id 초기화됨\n");
+            }
+            entityArr[i].alive = 0;
+            break;
+        }
+    }
 }

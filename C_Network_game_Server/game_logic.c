@@ -35,7 +35,7 @@ void handle_join(SOCKET client_fd, PayloadJoin* payload) {
 
     // 엔터티 생성
     uint32_t newClientId = generate_client_id();
-    Entity* ent = create_entity(type, newClientId);
+    Entity* ent = create_entity(type, newClientId, client_fd);
     if (!ent) {
         LOG_ERROR("엔터티 생성 실패");
         return;
@@ -73,7 +73,7 @@ void handle_action_event(SOCKET client_fd, PayloadActionEvent* payload) {
     }
 
     // 총알 생성
-    Entity* bullet = create_entity(ENTITY_BULLET, shooter->owner_client_id);
+    Entity* bullet = create_entity(ENTITY_BULLET, shooter->owner_client_id, client_fd);
     if (!bullet) {
         LOG_WARN("Bullet creation failed: entity limit reached");
         return;

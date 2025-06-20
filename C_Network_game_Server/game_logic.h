@@ -8,6 +8,8 @@
 #define SCREEN_WIDTH 100
 #define SCREEN_HEIGHT 150
 
+extern uint32_t defender_owner_id;
+
 // 게임 시작 이벤트 처리 함수
 void handle_join(SOCKET client_fd, PayloadJoin* payload);
 
