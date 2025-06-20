@@ -1,16 +1,19 @@
+Ôªø#include <time.h>
 #include "net_server.h"
+#include "game_logic.h"
+
+#define TICK_INTERVAL_MS 50  // 20 FPS
 
 int main() {
-	// ¿©º” √ ±‚»≠
     SOCKET serverSock = init_server_socket(9000);
     if (serverSock < 0) return 1;
 
-	// ¿Ã∫•∆Æ πËø≠ √ ±‚»≠
+    clock_t lastTick = clock();
+
     while (1) {
-        int index = WSAWaitForMultipleEvents(numOfClnt, eventArr, FALSE, WSA_INFINITE, FALSE);
+        int index = WSAWaitForMultipleEvents(numOfClnt, eventArr, FALSE, 1, FALSE);  // 1ms timeout
         int startIdx = index - WSA_WAIT_EVENT_0;
 
-		// ¿Ã∫•∆Æ∞° πﬂª˝«— ≈¨∂Û¿Ãæ∆Æ º“ƒœ¿ª √≥∏Æ
         for (int i = startIdx; i < numOfClnt; ++i) {
             int sigIdx = WSAWaitForMultipleEvents(1, &eventArr[i], TRUE, 0, FALSE);
             if (sigIdx == WSA_WAIT_FAILED || sigIdx == WSA_WAIT_TIMEOUT) continue;
@@ -18,11 +21,9 @@ int main() {
             WSANETWORKEVENTS netEvents;
             WSAEnumNetworkEvents(sockArr[i], eventArr[i], &netEvents);
 
-			// ªı∑ŒøÓ ≈¨∂Û¿Ãæ∆Æ ø¨∞· ºˆ∂Ù
             if (netEvents.lNetworkEvents & FD_ACCEPT) {
                 accept_new_client(serverSock);
             }
-			// ¿–±‚ ∂«¥¬ ¡æ∑· ¿Ã∫•∆Æ √≥∏Æ
             else if (netEvents.lNetworkEvents & FD_READ) {
                 if (recv_and_dispatch(i) < 0) {
                     closesocket(sockArr[i]);
@@ -30,10 +31,9 @@ int main() {
                     sockArr[i] = sockArr[numOfClnt - 1];
                     eventArr[i] = eventArr[numOfClnt - 1];
                     --numOfClnt; --i;
-                    printf("Server> client ¡æ∑·\n");
+                    printf("Server> client Ï¢ÖÎ£å\n");
                 }
             }
-			// ¡æ∑· ¿Ã∫•∆Æ √≥∏Æ
             else if (netEvents.lNetworkEvents & FD_CLOSE) {
                 closesocket(sockArr[i]);
                 WSACloseEvent(eventArr[i]);
@@ -41,6 +41,15 @@ int main() {
                 eventArr[i] = eventArr[numOfClnt - 1];
                 --numOfClnt; --i;
             }
+        }
+
+        // Í≤åÏûÑ Ìã± ÌÉÄÏù¥Î∞ç Ï†úÏñ¥
+        clock_t now = clock();
+        double elapsed_ms = (double)(now - lastTick) * 1000 / CLOCKS_PER_SEC;
+        if (elapsed_ms >= TICK_INTERVAL_MS) {
+            game_tick();
+            send_state_update();
+            lastTick = now;
         }
     }
 

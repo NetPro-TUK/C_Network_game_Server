@@ -87,28 +87,23 @@ int recv_and_dispatch(int i) {
         ret = recv_full(sockArr[i], &payload, sizeof(payload));
         if (ret > 0) {
             uint32_t id = ntohl(payload.entityId);
-            printf("[STATE_UPDATE] id=%u, pos=(%d, %d)\n", id, payload.x, payload.y);
 
             Entity* ent = get_entity_by_id(id);
             if (ent) {
                 update_entity_state(ent->entity_id, payload.x, payload.y, 0, 0);
             }
             else {
-                Entity* newEnt = create_entity(ENTITY_PLAYER, i); // 기본값: 방어자
-                if (newEnt) {
-                    newEnt->entity_id = id;
-                    newEnt->x = payload.x;
-                    newEnt->y = payload.y;
-                    newEnt->vx = 0;
-                    newEnt->vy = 0;
-                    newEnt->alive = 1;
-                }
-                else {
-                    printf("Entity limit reached! Cannot create new entity.\n");
-                }
+                LOG_WARN("Unknown entity ID in MSG_STATE_UPDATE");
             }
         }
     }
+	else if (type == MSG_ACTION_EVENT && payload_len == sizeof(PayloadActionEvent)) {
+		PayloadActionEvent actionPayload;
+		ret = recv_full(sockArr[i], &actionPayload, sizeof(actionPayload));
+		if (ret > 0) {
+			handle_action_event(sockArr[i], &actionPayload);
+		}
+	}
     else {
         char dump[512];
         if (payload_len < sizeof(dump)) recv_full(sockArr[i], dump, payload_len);

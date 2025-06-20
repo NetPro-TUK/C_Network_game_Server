@@ -10,6 +10,10 @@
 void ErrorHandling(char* message);
 #define MAX_PACKET_SIZE  120
 
+#define ENTITY_PLAYER 1
+#define ENTITY_ATTACKER 2
+
+
 int main(void)
 {
     WSADATA wsaData;
@@ -32,13 +36,11 @@ int main(void)
     if (ret == SOCKET_ERROR) {
         printf("<ERROR> Client. connect() 실행 오류.\n");
         closesocket(hSocket);
-        printf("Client> close socket...\n");
         WSACleanup();
         return 0;
     }
-    else {
-        printf("Client> connection established...\n");
-    }
+
+    printf("Client> connection established...\n");
 
     // -----------------------------
     // 1. 역할 선택 및 MSG_JOIN 전송
@@ -62,26 +64,59 @@ int main(void)
     printf("Client> 역할 선택 전송 완료 (%s)\n", role == 1 ? "방어자" : "공격자");
 
     // -----------------------------
-    // 2. 테스트용 STATE_UPDATE 전송
+    // 2. MSG_JOIN_ACK 응답 수신
     // -----------------------------
-    PayloadStateUpdate payload;
-    payload.entityId = htonl(1); // 테스트용 ID
-    payload.x = 10;
-    payload.y = 20;
+    MsgHeader ackHeader;
+    recv_full(hSocket, &ackHeader, sizeof(ackHeader));
+    if (ackHeader.type != MSG_JOIN_ACK || ntohl(ackHeader.length) != sizeof(PayloadJoinAck)) {
+        printf("Client> 잘못된 MSG_JOIN_ACK 수신\n");
+        closesocket(hSocket); WSACleanup(); return 1;
+    }
+
+    PayloadJoinAck ackPayload;
+    recv_full(hSocket, &ackPayload, sizeof(ackPayload));
+    uint32_t myId = ntohl(ackPayload.entityId);
+    printf("Client> 내 Entity ID = %u, 역할 = %s\n", myId,
+        ackPayload.role == ENTITY_PLAYER ? "PLAYER" : "ATTACKER");
+
+    // -----------------------------
+    // 3. 테스트용 MSG_STATE_UPDATE 전송
+    // -----------------------------
+    PayloadStateUpdate statePayload;
+    statePayload.entityId = htonl(myId);
+    statePayload.x = 10;
+    statePayload.y = 20;
 
     MsgHeader stateHeader = {
         .type = MSG_STATE_UPDATE,
-        .length = htonl(sizeof(payload))
+        .length = htonl(sizeof(statePayload))
     };
 
     send_full(hSocket, &stateHeader, sizeof(stateHeader));
-    send_full(hSocket, &payload, sizeof(payload));
+    send_full(hSocket, &statePayload, sizeof(statePayload));
     printf("Client> 상태 전송 완료\n");
 
-    // (옵션) 서버 응답 수신
-    recv_full(hSocket, &stateHeader, sizeof(stateHeader));
-    printf("Client> 헤더 수신 완료: type = %d, length = %d\n", stateHeader.type, ntohl(stateHeader.length));
+    // -----------------------------
+    // 4. 테스트용 총알 발사(MSG_ACTION_EVENT) 전송
+    // -----------------------------
+    PayloadActionEvent actionPayload;
+    actionPayload.shooterId = htonl(myId);
+    actionPayload.bulletId = htonl(999);  // 테스트용 Bullet ID
+    actionPayload.dirX = 1;               // 오른쪽 방향
+    actionPayload.dirY = 0;
 
+    MsgHeader actionHeader = {
+        .type = MSG_ACTION_EVENT,
+        .length = htonl(sizeof(actionPayload))
+    };
+
+    send_full(hSocket, &actionHeader, sizeof(actionHeader));
+    send_full(hSocket, &actionPayload, sizeof(actionPayload));
+    printf("Client> 총알 발사 전송 완료 (bulletId = 999)\n");
+
+    // -----------------------------
+    // 5. 종료
+    // -----------------------------
     closesocket(hSocket);
     printf("Client> close socket...\n");
     WSACleanup();
