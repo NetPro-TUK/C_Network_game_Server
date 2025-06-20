@@ -49,6 +49,7 @@ int main() {
                 sockArr[i] = sockArr[numOfClnt - 1];
                 eventArr[i] = eventArr[numOfClnt - 1];
                 --numOfClnt; --i;
+                printf("Server> client 종료\n");
             }
         }
 
