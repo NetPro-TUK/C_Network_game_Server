@@ -23,11 +23,10 @@ typedef struct {
 EntityView view_entities[MAX_ENTITIES];
 
 // 상태 변수
-volatile int join_result_ready = 0;
-volatile uint32_t my_entity_id = 0;
-volatile int player_rejected = 0;
-volatile int socket_disconnected = 0;
-int role = 0;
+volatile RoleStatus role_status = ROLE_STATUS_PENDING; // 역할 상태
+volatile uint32_t my_entity_id = 0;    // 내 엔티티 ID
+volatile int socket_disconnected = 0;  // 소켓 끊김 여부
+int role = 0;                          // 내 역할 (0: 공격자, 1: 방어자)
 
 // 유효 좌표 여부 확인
 bool is_valid_position(int x, int y) {
@@ -64,14 +63,13 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
             PayloadJoinAck payload;
             recv_full(sock, &payload, sizeof(payload));
             my_entity_id = ntohl(payload.entityId);
-            join_result_ready = 1;
+            role_status = ROLE_STATUS_APPROVED;
         }
         else if (header.type == MSG_GAME_EVENT && len == sizeof(PayloadGameEvent)) {
             PayloadGameEvent payload;
             recv_full(sock, &payload, sizeof(payload));
             if (payload.event_type == PLAYER_REJECTED) {
-                player_rejected = 1;
-                join_result_ready = 1;
+                role_status = ROLE_STATUS_REJECTED;
             }
         }
         else if (header.type == MSG_STATE_UPDATE && len == sizeof(PayloadStateUpdate)) {
@@ -147,26 +145,25 @@ int main(void) {
             return 1;
         }
 
-        join_result_ready = 0;
-        player_rejected = 0;
+        role_status = ROLE_STATUS_PENDING;
         socket_disconnected = 0;
         CreateThread(NULL, 0, recv_server_thread, &hSocket, 0, NULL);
 
         send_join_and_get_id(hSocket, role);
 
-        while (!join_result_ready && !socket_disconnected) {
+        while (role_status == ROLE_STATUS_PENDING && !socket_disconnected) {
             Sleep(10);
         }
 
-        if (socket_disconnected) {
-            printf("서버와 연결이 끊겼습니다.\n");
+        if (role_status == ROLE_STATUS_REJECTED) {
+            printf("[알림] 방어자가 이미 존재합니다.\n");
             closesocket(hSocket);
             WSACleanup();
             continue;
         }
 
-        if (player_rejected) {
-            printf("[알림] 방어자가 이미 존재합니다.\n");
+        if (socket_disconnected) {
+            printf("서버와 연결이 끊겼습니다.\n");
             closesocket(hSocket);
             WSACleanup();
             continue;
