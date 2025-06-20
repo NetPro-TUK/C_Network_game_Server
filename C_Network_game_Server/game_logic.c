@@ -5,7 +5,7 @@
 #include "log.h"
 #include "net_utils.h"
 
-int has_player;  // 전역 또는 전역 배열로 추적
+int has_defender;  // 전역 또는 전역 배열로 추적
 
 // 클라이언트가 JOIN 요청을 보냈을 때 처리하는 함수
 void handle_join(SOCKET client_fd, PayloadJoin* payload) {
@@ -21,7 +21,7 @@ void handle_join(SOCKET client_fd, PayloadJoin* payload) {
     }
 
     // 방어자 중복 체크
-    if (type == ENTITY_DEFENDER && has_player) {
+    if (type == ENTITY_DEFENDER && has_defender) {
         printf("Server> 이미 방어자가 존재합니다. 요청 거부.\n");
 
         MsgHeader h = { .type = MSG_GAME_EVENT, .length = htonl(sizeof(PayloadGameEvent)) };
@@ -40,7 +40,7 @@ void handle_join(SOCKET client_fd, PayloadJoin* payload) {
         return;
     }
 
-    if (type == ENTITY_DEFENDER) has_player = 1;
+    if (type == ENTITY_DEFENDER) has_defender = 1;
 
     printf("Server> JOIN: client_fd=%d → entity_id=%u [%s]\n", client_fd, ent->entity_id,
         type == ENTITY_DEFENDER ? "DEFENDER" : "ATTACKER");
