@@ -5,8 +5,8 @@
 #include "protocol.h"
 
 // 화면 경계 (콘솔 기준으로 자유롭게 조정)
-#define SCREEN_WIDTH 80
-#define SCREEN_HEIGHT 24
+#define SCREEN_WIDTH 100
+#define SCREEN_HEIGHT 150
 
 // 게임 로직 처리 함수 선언
 void handle_join(SOCKET client_fd, PayloadJoin* payload);
