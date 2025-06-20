@@ -12,7 +12,7 @@ void handle_join(SOCKET client_fd, PayloadJoin* payload) {
     EntityType type;
 
     if (payload->role == 1)
-        type = ENTITY_PLAYER;
+        type = ENTITY_DEFENDER;
     else if (payload->role == 2)
         type = ENTITY_ATTACKER;
     else {
@@ -43,7 +43,7 @@ void handle_join(SOCKET client_fd, PayloadJoin* payload) {
     if (type == ENTITY_PLAYER) has_player = 1;
 
     printf("Server> JOIN: client_fd=%d → entity_id=%u [%s]\n", client_fd, ent->entity_id,
-        type == ENTITY_PLAYER ? "PLAYER" : "ATTACKER");
+        type == ENTITY_DEFENDER ? "PLAYER" : "ATTACKER");
 
     // 클라이언트에게 entity_id를 응답으로 보냄
     PayloadJoinAck ackPayload;
@@ -160,8 +160,8 @@ void check_collision() {
                 }
 
                 // 방어자 vs 공격자
-                else if ((a->type == ENTITY_PLAYER && b->type == ENTITY_ATTACKER) ||
-                    (a->type == ENTITY_ATTACKER && b->type == ENTITY_PLAYER)) {
+                else if ((a->type == ENTITY_DEFENDER && b->type == ENTITY_ATTACKER) ||
+                    (a->type == ENTITY_ATTACKER && b->type == ENTITY_DEFENDER)) {
 
                     mark_entity_dead(a->entity_id);
                     mark_entity_dead(b->entity_id);
@@ -180,7 +180,7 @@ void check_game_over() {
 
     for (int i = 0; i < entityCount; ++i) {
         Entity* ent = &entityArr[i];
-        if (ent->alive && ent->type == ENTITY_PLAYER) {
+        if (ent->alive && ent->type == ENTITY_DEFENDER) {
             playerAlive = 1;
             break;
         }

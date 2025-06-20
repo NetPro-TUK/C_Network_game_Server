@@ -6,7 +6,7 @@
 #define MAX_ENTITY 256
 
 typedef enum {
-    ENTITY_PLAYER,     // 방어자
+    ENTITY_DEFENDER,     // 방어자
     ENTITY_BULLET,     // 총알
     ENTITY_ATTACKER    // 공격자
 } EntityType;
