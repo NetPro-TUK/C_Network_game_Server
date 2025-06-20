@@ -11,6 +11,7 @@
 SOCKET sockArr[MAX_CLIENT];     // 클라이언트 소켓 배열
 WSAEVENT eventArr[MAX_CLIENT];  // 각 소켓에 대한 이벤트 핸들
 int numOfClnt = 0;              // 현재 접속한 클라이언트 수
+static uint32_t client_id = 1;
 
 // 서버 소켓 초기화 및 리슨
 int init_server_socket(int port) {
@@ -185,3 +186,7 @@ void broadcast_all(const void* buf, int len) {
          send_to_client(sockArr[i], buf, len);
      }
  }
+
+uint32_t generate_client_id(void) {
+    return client_id++;
+}

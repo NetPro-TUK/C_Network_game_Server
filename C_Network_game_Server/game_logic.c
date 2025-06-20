@@ -5,7 +5,7 @@
 #include "log.h"
 #include "net_utils.h"
 
-int has_defender;  // 전역 또는 전역 배열로 추적
+uint32_t defender_owner_id = 0;
 
 // 클라이언트가 JOIN 요청을 보냈을 때 처리하는 함수
 void handle_join(SOCKET client_fd, PayloadJoin* payload) {
@@ -21,7 +21,7 @@ void handle_join(SOCKET client_fd, PayloadJoin* payload) {
     }
 
     // 방어자 중복 체크
-    if (type == ENTITY_DEFENDER && has_defender) {
+    if (type == ENTITY_DEFENDER && defender_owner_id != 0) {
         printf("Server> 이미 방어자가 존재합니다. 요청 거부.\n");
 
         MsgHeader h = { .type = MSG_GAME_EVENT, .length = htonl(sizeof(PayloadGameEvent)) };
@@ -34,13 +34,14 @@ void handle_join(SOCKET client_fd, PayloadJoin* payload) {
     }
 
     // 엔터티 생성
-    Entity* ent = create_entity(type, client_fd);
+    uint32_t newClientId = generate_client_id();
+    Entity* ent = create_entity(type, newClientId);
     if (!ent) {
         LOG_ERROR("엔터티 생성 실패");
         return;
     }
 
-    if (type == ENTITY_DEFENDER) has_defender = 1;
+    if (type == ENTITY_DEFENDER) defender_owner_id = newClientId;
 
     printf("Server> JOIN: client_fd=%d → entity_id=%u [%s]\n", client_fd, ent->entity_id,
         type == ENTITY_DEFENDER ? "DEFENDER" : "ATTACKER");
