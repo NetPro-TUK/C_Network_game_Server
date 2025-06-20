@@ -196,7 +196,7 @@ int main(void) {
                     send_state_update(hSocket, my_entity_id, x, y);
                 }
             }
-            Sleep(50);
+            Sleep(20);
         }
     }
     else {
@@ -206,7 +206,7 @@ int main(void) {
                 if (key == 27) break;
             }
             auto_move_attacker(hSocket, my_entity_id, &x, &y);
-            Sleep(180);
+            Sleep(120);
         }
     }
 
