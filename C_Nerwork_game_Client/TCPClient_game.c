@@ -12,17 +12,20 @@
 void auto_move_attacker(SOCKET sock, uint32_t id, int* x, int* y) {
     erase_attacker(*x, *y);
 
-    // 위 or 아래 무작위 이동
+    // x좌표 증가 및 경계 처리
+    (*x)++;
+    if (*x > 78) *x = 1;
+
+    // y축 무작위 이동
     int dir = rand() % 2 == 0 ? -1 : 1;
     *y += dir;
-
-    // 경계 확인
     if (*y < 1) *y = 1;
     if (*y >= FIELD_HEIGHT - 1) *y = FIELD_HEIGHT - 2;
 
     draw_attacker(*x, *y);
     send_state_update(sock, id, *x, *y);
 }
+
 
 int main(void) {
     srand((unsigned int)time(NULL));
