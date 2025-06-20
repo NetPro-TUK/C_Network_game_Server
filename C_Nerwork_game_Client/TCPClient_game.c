@@ -23,7 +23,6 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
         MsgHeader header;
         int ret = recv_full(sock, &header, sizeof(header));
         if (ret <= 0) {
-            printf("[Thread] 서버 연결 종료 감지 (recv = %d), 스레드 종료\n", ret);
             socket_disconnected = 1;
             break;
         }
