@@ -32,18 +32,19 @@ typedef struct {
 
 // 역할 선택 페이로드 (클라 -> 서버)
 typedef struct {
-    int role;           // 1: 방어자(PLAYER), 2: 공격자(ATTACKER)
+    int role;           // 1: 방어자(DEFENDER), 2: 공격자(ATTACKER)
 } PayloadJoin;
 
 typedef struct {
     uint32_t entityId;     // 서버가 부여한 엔터티 ID
-    int role;              // ENTITY_PLAYER 또는 ENTITY_ATTACKER
+    int role;              // ENTITY_DEFENDER 또는 ENTITY_ATTACKER
 } PayloadJoinAck;
 
 // 상태 업데이트 페이로드 구조체
 typedef struct {
     uint32_t entityId;  // 엔티티 ID (네트워크 바이트 순서)
     int    x, y;        // 위치 좌표
+    int role;           // ENTITY_DEFENDER 또는 ENTITY_ATTACKER
 } PayloadStateUpdate;
 
 // 액션 이벤트 페이로드 구조체

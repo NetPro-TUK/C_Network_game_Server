@@ -123,6 +123,7 @@ void send_state_update() {
         payload.entityId = htonl(ent->entity_id);
         payload.x = ent->x;
         payload.y = ent->y;
+        payload.role = ent->type;
 
         // 헤더 준비
         MsgHeader header;

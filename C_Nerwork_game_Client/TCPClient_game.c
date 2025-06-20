@@ -78,7 +78,7 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
             PayloadStateUpdate payload;
             recv_full(sock, &payload, sizeof(payload));
             uint32_t id = ntohl(payload.entityId);
-            int x = payload.x, y = payload.y;
+            int x = payload.x, y = payload.y, type = payload.role;
 
             if (!is_valid_position(x, y)) continue;
 
@@ -87,6 +87,7 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                     erase_entity(&view_entities[i]);
                     view_entities[i].x = x;
                     view_entities[i].y = y;
+                    view_entities[i].type = type;
                     draw_entity(&view_entities[i]);
                     goto CONTINUE;
                 }
