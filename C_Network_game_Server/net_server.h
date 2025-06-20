@@ -23,4 +23,7 @@ void	send_to_client(SOCKET sock, const void* buf, int len);
 
 // 모든 클라이언트에게 데이터 브로드캐스트
 void	broadcast_all(const void* buf, int len);
+
+// 클라이언트 종료 처리
+void remove_client_at(int index);
 #endif

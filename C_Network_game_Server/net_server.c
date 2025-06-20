@@ -157,6 +157,21 @@ int recv_and_dispatch(int i) {
     return 0;
 }
 
+// ------------------------------
+// 클라이언트 연결 종료 및 소켓 제거
+void remove_client_at(int index) {
+    if (index < 0 || index >= numOfClnt) return;
+
+    closesocket(sockArr[index]);
+    WSACloseEvent(eventArr[index]);
+
+    // 배열 압축
+    sockArr[index] = sockArr[numOfClnt - 1];
+    eventArr[index] = eventArr[numOfClnt - 1];
+
+    --numOfClnt;
+    --index;
+}
 
 
 // 특정 클라이언트에게 메세지 전송

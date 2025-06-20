@@ -3,6 +3,7 @@
 
 Entity entityArr[MAX_ENTITY];
 int entityCount = 0;
+extern int has_player; // game_logic.h에서 정의된 전역 변수
 static uint32_t nextEntityId = 1;
 
 void init_entity_system() {
@@ -50,14 +51,5 @@ void mark_entity_dead(uint32_t id) {
     Entity* ent = get_entity_by_id(id);
     if (ent) {
         ent->alive = 0;
-    }
-}
-
-// 클라이언트가 소유한 모든 엔티티를 제거하는 함수
-void remove_client_entities(uint32_t owner_id) {
-    for (int i = 0; i < entityCount; ++i) {
-        if (entityArr[i].owner_client_id == owner_id) {
-            entityArr[i].alive = 0;
-        }
     }
 }

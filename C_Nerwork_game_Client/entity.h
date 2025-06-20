@@ -27,7 +27,6 @@ Entity* create_entity(EntityType type, uint32_t owner_id);
 Entity* get_entity_by_id(uint32_t id);
 void    update_entity_state(uint32_t id, int x, int y, int vx, int vy);
 void    mark_entity_dead(uint32_t id);
-void    remove_client_entities(uint32_t owner_id);
 
 extern Entity entityArr[MAX_ENTITY];
 extern int entityCount;
