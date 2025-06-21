@@ -31,4 +31,7 @@ void send_state_update(SOCKET sock, uint32_t id, int x, int y);
 // 게임 이벤트 메세지
 void handle_server_message(MsgHeader* header, void* payload);
 
+// 클라이언트가 공격자 역할을 선택했을 때, 총알 발사 이벤트를 서버로 전송
+void send_action_event(SOCKET sock, uint32_t shooter_id, uint32_t bullet_id, int dirX, int dirY);
+
 #endif
