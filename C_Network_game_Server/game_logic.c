@@ -164,6 +164,18 @@ void game_tick() {
                 e->ammo = 20;
                 e->reloading = 0;
                 LOG_INFO("Reload complete for entity %u", e->entity_id);
+
+                // 재장전 완료 알림 전송
+                MsgHeader header;
+                header.type = MSG_GAME_EVENT;
+                header.length = htonl(sizeof(PayloadGameEvent));
+
+                PayloadGameEvent payload;
+                payload.event_type = RELOAD_COMPLETE;
+                payload.entityId = htonl(e->entity_id);
+
+                send_full(e->sock, &header, sizeof(header));
+                send_full(e->sock, &payload, sizeof(payload));
             }
         }
     }
