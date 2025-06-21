@@ -197,6 +197,20 @@ void game_tick() {
                 e->y < 0 || e->y >= SCREEN_HEIGHT) {
                 mark_entity_dead(e->entity_id);
                 LOG_INFO("Entity %d out of bounds → dead", e->entity_id);
+
+                // 🔽 여기 추가
+                if (e->type == ENTITY_BULLET) {
+                    PayloadGameEvent ev = {
+                        .event_type = ENTITY_REMOVE,
+                        .entityId = htonl(e->entity_id)
+                    };
+                    MsgHeader hdr = {
+                        .type = MSG_GAME_EVENT,
+                        .length = htonl(sizeof(ev))
+                    };
+                    broadcast_all(&hdr, sizeof(hdr));
+                    broadcast_all(&ev, sizeof(ev));
+                }
             }
         }
 
