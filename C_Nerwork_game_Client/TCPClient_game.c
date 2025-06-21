@@ -171,7 +171,6 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
             // 화면 초기화 및 다시 그리기
             if (id == my_entity_id && wants_respawn && entType == ENTITY_ATTACKER) {
                 wants_respawn = 0;
-
                 // 1. 전체 화면 초기화 및 다시 그리기
                 redraw_full_screen();
 
@@ -308,15 +307,13 @@ int main(void) {
                                 .event_type = RESPAWN_REQUEST,
                                 .entityId = htonl(my_entity_id)
                             };
-                            send(hSocket, (char*)&hdr, sizeof(hdr), 0);
-                            send(hSocket, (char*)&ev, sizeof(ev), 0);
-                            // "리스폰 요청을 보냈습니다!" 메시지는 recv_server_thread에서 "리스폰 완료!"로 처리되므로 여기서는 생략 가능.
-                            // 또는 필요하다면 잠시 출력 후 지울 수 있도록 조정.
-                            // 여기서는 `wants_respawn` 플래그를 0으로 설정하여 중복 요청 방지.
-                            wants_respawn = 0; // 리스폰 요청 후 플래그 초기화
+                            if (vk == 0x59) { // y 키 입력
+                                send(hSocket, (char*)&hdr, sizeof(hdr), 0);
+                                send(hSocket, (char*)&ev, sizeof(ev), 0);
+                                gotoxy(2, FIELD_HEIGHT - 3);
+                            }
                         }
                         else {
-                            // Y 이외 키 → 종료 (Stashed changes)
                             printf("게임에서 퇴장합니다.\n");
                             break;
                         }
