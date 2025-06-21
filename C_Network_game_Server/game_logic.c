@@ -49,7 +49,7 @@ void handle_join(SOCKET client_fd, PayloadJoin* payload) {
         LOG_ERROR("엔터티 생성 실패");
         return;
     }
-    // ▶ 시작 위치 설정: 방어자 x=70, 공격자 x=1, y는 필드 중앙
+    // 시작 위치 설정: 방어자 x=70, 공격자 x=1, y는 필드 중앙
         ent->y = SCREEN_HEIGHT / 2;  // game_logic.h: SCREEN_HEIGHT = 25
         if (type == ENTITY_DEFENDER) {
             ent->x = 75;
@@ -93,12 +93,8 @@ void handle_action_event(SOCKET client_fd, PayloadActionEvent* payload) {
         LOG_WARN("Shooter not found");
         return;
     }
-    if (shooter->reloading) {
-        LOG_INFO("Shooter is reloading.");
-        return;
-    }
     if (shooter->ammo <= 0) {
-        LOG_INFO("Shooter has no ammo left.");
+        // LOG_INFO("Shooter has no ammo left.");
         return;
     }
 
@@ -120,6 +116,7 @@ void handle_action_event(SOCKET client_fd, PayloadActionEvent* payload) {
     LOG_INFO("Bullet created");
 }
 
+// 재장전 요청을 처리하는 함수
 void handle_reload_request(SOCKET client_fd, uint32_t entity_id) {
     Entity* e = get_entity_by_id(entity_id);
     if (!e || e->type != ENTITY_DEFENDER) return;
@@ -165,24 +162,39 @@ void game_tick() {
         seeded = 1;
     }
 
+
     // (추가 기능) 방어자 재장전 상태 갱신
     for (int i = 0; i < entityCount; ++i) {
         Entity* e = &entityArr[i];
-        if (e->alive && e->type == ENTITY_DEFENDER && e->reloading) {
-            uint64_t now = current_time_ms();
-            if (now - e->reload_start_time_ms >= 3000) {
-                e->ammo = 20;
-                e->reloading = 0;
-                LOG_INFO("Reload complete for entity %u", e->entity_id);
+        if (e->alive && e->type == ENTITY_DEFENDER) {
+            if (e->reloading) {
+                uint64_t now = current_time_ms();
+                if (now - e->reload_start_time_ms >= 3000) {
+                    e->ammo = 20;
+                    e->reloading = 0;
+                    LOG_INFO("Reload complete for entity %u", e->entity_id);
 
-                // 재장전 완료 알림 전송
+                    // 재장전 완료 알림 전송
+                    MsgHeader header;
+                    header.type = MSG_GAME_EVENT;
+                    header.length = htonl(sizeof(PayloadGameEvent));
+
+                    PayloadGameEvent payload;
+                    payload.event_type = RELOAD_COMPLETE;
+                    payload.entityId = htonl(e->entity_id);
+
+                    send_full(e->sock, &header, sizeof(header));
+                    send_full(e->sock, &payload, sizeof(payload));
+                }
+            }
+            else if (e->ammo <= 0) {
+                LOG_INFO("Shooter has no ammo left.");
                 MsgHeader header;
                 header.type = MSG_GAME_EVENT;
                 header.length = htonl(sizeof(PayloadGameEvent));
 
                 PayloadGameEvent payload;
-                payload.event_type = RELOAD_COMPLETE;
-                payload.entityId = htonl(e->entity_id);
+                payload.event_type = OUT_OF_AMMO;
 
                 send_full(e->sock, &header, sizeof(header));
                 send_full(e->sock, &payload, sizeof(payload));
