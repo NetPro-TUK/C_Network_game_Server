@@ -22,7 +22,9 @@ bool    client_ready[MAX_CLIENT];
 int numOfClnt = 0;              // 현재 접속한 클라이언트 수
 static uint32_t client_id = 1;
 
-
+// game_logic.c 또는 net_server.c
+uint32_t attacker_death_time_ms = 0;
+bool attacker_pending_respawn = false;
 
 
 // 서버 소켓 초기화 및 리슨
@@ -197,6 +199,44 @@ int recv_and_dispatch(int i) {
             return 0;
         }
         handle_action_event(sockArr[i], &actionPayload);
+    }
+    else if (type == MSG_GAME_EVENT && payload_len == sizeof(PayloadGameEvent)) {
+        PayloadGameEvent ev;
+        recv_full(sockArr[i], &ev, sizeof(ev));
+
+        GameEventType type = ev.event_type;
+        uint32_t entityId = ntohl(ev.entityId);
+
+        if (type == RESPAWN_REQUEST) {
+            LOG_INFO("리스폰 요청 수신: entityId = %u", entityId);
+
+            // 1. 먼저 해당 ID가 이미 살아있는지 확인
+            Entity* existing = get_entity_by_id(entityId);
+            if (existing && existing->alive) {
+                LOG_WARN("리스폰 요청 거부: entityId=%u 이미 활성 상태", entityId);
+                return 0;
+            }
+
+            // 2. 이제 새로 생성 (중복 없음 보장됨)
+            Entity* e = create_entity(ENTITY_ATTACKER, 1, rand() % SCREEN_HEIGHT);
+            if (e) {
+                e->entity_id = entityId;
+
+                // 클라이언트에 상태 전송
+                PayloadStateUpdate update = {
+                    .entityId = htonl(entityId),
+                    .x = e->x,
+                    .y = e->y,
+                    .role = ENTITY_ATTACKER
+                };
+                MsgHeader hdr = {
+                    .type = MSG_STATE_UPDATE,
+                    .length = htonl(sizeof(update))
+                };
+                broadcast_all(&hdr, sizeof(hdr));
+                broadcast_all(&update, sizeof(update));
+            }
+        }
     }
     else {
         // 정의되지 않은 메시지 → 길이 확인해서 덤프

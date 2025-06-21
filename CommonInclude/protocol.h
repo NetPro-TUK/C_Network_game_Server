@@ -9,8 +9,8 @@ typedef enum {
     MSG_ACTION_EVENT = 2,   // 액션 이벤트
     MSG_JOIN = 3,           // 역할 선택용
     MSG_GAME_EVENT = 4,     // 게임 이벤트 (예: 게임 시작, 종료 등)
-    MSG_JOIN_ACK = 5,       // 클라에게 엔티티 ID 전달용
-    MSG_READY = 6,          // 클라이언트 → 서버: 준비 완료 신호
+    MSG_JOIN_ACK = 5,       // 클라에게 en티티 ID 전달용
+    MSG_READY = 6           // 클라이언트 → 서버: 준비 완료 신호
 } MsgType;
 
 // 게임 이벤트 타입 정의
@@ -20,7 +20,7 @@ typedef enum {
     PLAYER_REJECTED = 3,
     GAME_START = 4,          // 서버 → 클라이언트: 게임 시작 신호
     ENTITY_REMOVE = 5,
-    RELOAD_REQUEST = 6       // 서버 → 클라이언트: 리로드 요청
+    RESPAWN_REQUEST = 6      //리스폰 요청 타입 추가
 } GameEventType;
 
 // 게임 이벤트 페이로드 구조체

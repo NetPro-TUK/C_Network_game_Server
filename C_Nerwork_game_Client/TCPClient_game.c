@@ -27,7 +27,8 @@ volatile RoleStatus role_status = ROLE_STATUS_PENDING; // 역할 상태
 volatile uint32_t my_entity_id = 0;    // 내 엔티티 ID
 volatile int socket_disconnected = 0;  // 소켓 끊김 여부
 static bool game_started = false;      // 게임 시작 여부
-int role = 0;       // 내 역할 (0: 공격자, 1: 방어자)                   
+int role = 0;       // 내 역할 (0: 공격자, 1: 방어자)        
+volatile int wants_respawn = 0;
 
 // 유효 좌표 여부 확인
 bool is_valid_position(int x, int y) {
@@ -83,16 +84,20 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                 role_status = ROLE_STATUS_REJECTED;
             }
             else if (p.event_type == ENTITY_REMOVE) {
-                // 엔티티 ID 복원
-                uint32_t removeId = ntohl(p.entityId);
+                uint32_t id = ntohl(p.entityId);
 
                 // view_entities에서 찾아서 inactive + 화면 지우기
                 for (int k = 0; k < MAX_ENTITIES; ++k) {
-                    if (view_entities[k].active && view_entities[k].entity_id == removeId) {
-                        // 로컬 상태 갱신
+                    if (view_entities[k].active && view_entities[k].entity_id == id) {
                         view_entities[k].active = 0;
-                        // 렌더러(화면)에서 즉시 지우기
                         erase_entity(&view_entities[k]);
+
+                        // ▶ 내가 죽은 공격자인 경우
+                        if (id == my_entity_id && view_entities[k].type == ENTITY_ATTACKER) {
+                            printf("💀 공격자가 사망했습니다. 리스폰 하시겠습니까? (S 키)\n");
+                            // 상태 플래그 활성화
+                            wants_respawn = 1;
+                        }
                         break;
                     }
                 }
@@ -285,11 +290,30 @@ int main(void) {
         while (1) {
             if (socket_disconnected) break;
             // ESC 만 처리 (자동 이동은 계속)
+  // 콘솔 키 이벤트 처리
             if (PeekConsoleInput(hStdin, &rec, 1, &cnt) && cnt > 0) {
                 ReadConsoleInput(hStdin, &rec, 1, &cnt);
-                if (rec.EventType == KEY_EVENT && rec.Event.KeyEvent.bKeyDown &&
-                    rec.Event.KeyEvent.wVirtualKeyCode == VK_ESCAPE) {
-                    break;
+                if (rec.EventType == KEY_EVENT && rec.Event.KeyEvent.bKeyDown) {
+                    WORD vk = rec.Event.KeyEvent.wVirtualKeyCode;
+
+                    if (vk == VK_ESCAPE) break;
+
+                    // ▶ S 키로 리스폰 요청
+                    else if (wants_respawn && (vk == 'S')) {
+                        PayloadGameEvent ev = {
+                            .event_type = RESPAWN_REQUEST,
+                            .entityId = htonl(my_entity_id)
+                        };
+                        MsgHeader hdr = {
+                            .type = MSG_GAME_EVENT,
+                            .length = htonl(sizeof(ev))
+                        };
+                        send(hSocket, (char*)&hdr, sizeof(hdr), 0);
+                        send(hSocket, (char*)&ev, sizeof(ev), 0);
+
+                        printf("🔁 리스폰 요청을 보냈습니다!\n");
+                        wants_respawn = 0;
+                    }
                 }
             }
             Sleep(120);
