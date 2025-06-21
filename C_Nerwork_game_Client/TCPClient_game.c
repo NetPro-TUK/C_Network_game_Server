@@ -81,16 +81,27 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                 role_status = ROLE_STATUS_REJECTED;
             }
             else if (p.event_type == GAME_OVER) {
-                gotoxy(0, FIELD_HEIGHT + 2);
-                printf("\n===> 게임 오버! <===\n");
-                gotoxy(0, FIELD_HEIGHT + 3);
-                printf("종료하려면 'Q' 키를 누르세요...\n");
+                // 1) 기존 화면 완전 삭제
+                system("cls");
+
+                // 2) 테두리 다시 그리기 (선택)
+                draw_border();
+
+                // 3) 게임 오버 메시지 중앙 혹은 아래쪽에 출력
+                gotoxy((FIELD_WIDTH - 12) / 2, FIELD_HEIGHT / 2);
+                printf("===> GAME OVER <===\n");
+                gotoxy((FIELD_WIDTH - 24) / 2, FIELD_HEIGHT / 2 + 2);
+                printf("Press 'Q' to quit...\n");
+
+                // 4) Q 키 대기
                 int ch;
                 do {
                     ch = _getch();
                     ch = toupper(ch);
+
                 } while (ch != 'Q');
 
+                // 5) 종료 플래그 세팅 및 리시브 스레드 종료
                 socket_disconnected = 1;
                 break;
             }
@@ -212,6 +223,7 @@ int main(void) {
     hide_cursor();
     system("cls");
     draw_border();
+    draw_status(role == 1 ? "방어자" : "공격자");
 
     // 3) 초기 위치 설정
     int x = (role == 1) ? 70 : 1;
