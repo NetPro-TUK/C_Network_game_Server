@@ -134,6 +134,8 @@ int main(void) {
     srand((unsigned int)time(NULL));
     SOCKET hSocket;
 
+	init_console_sync(); // 콘솔 동기화 초기화
+
     while (1) {
         printf("역할을 선택하세요: [1] 방어자 (DEFENDER), [2] 공격자 (ATTACKER): ");
         scanf("%d", &role);
@@ -181,8 +183,7 @@ int main(void) {
 
     send_state_update(hSocket, my_entity_id, x, y);
 
-    gotoxy(0, FIELD_HEIGHT);
-    printf("%s 조작 중. ESC 키로 종료합니다.\n", role == 1 ? "방어자" : "공격자");
+    draw_status(role == 1 ? "방어자" : "공격자"); 
 
     if (role == 1) {
         while (1) {
@@ -211,6 +212,7 @@ int main(void) {
     }
 
     show_cursor();
+    cleanup_console_sync();   
     closesocket(hSocket);
     WSACleanup();
     system("cls");
