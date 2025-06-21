@@ -1,17 +1,20 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
 // 공용 헤더 파일
-#include "protocol.h"
+#include "protocol.h"   
 #include "net_utils.h"
 #include "log.h"
 #include "entity.h"
 // 서버 헤더 파일
 #include "net_server.h"
 #include "game_logic.h"
-#include <stdio.h>
-#include <string.h>
+
 
 // 클라이언트 소켓과 이벤트 핸들 배열
 SOCKET sockArr[MAX_CLIENT];     // 클라이언트 소켓 배열
 WSAEVENT eventArr[MAX_CLIENT];  // 각 소켓에 대한 이벤트 핸들
+bool    client_ready[MAX_CLIENT];  
 int numOfClnt = 0;              // 현재 접속한 클라이언트 수
 static uint32_t client_id = 1;
 
@@ -67,6 +70,9 @@ void accept_new_client(SOCKET serverSock) {
     sockArr[numOfClnt] = hClntSock;
     eventArr[numOfClnt] = WSACreateEvent();
     WSAEventSelect(hClntSock, eventArr[numOfClnt], FD_READ | FD_CLOSE);      // 읽기/종료 감지
+
+    // 준비 상태 초기화
+    client_ready[numOfClnt] = false;
 
     printf("Server> client connected: %s:%d\n", inet_ntoa(clntAdr.sin_addr), ntohs(clntAdr.sin_port));
     numOfClnt++;
@@ -133,6 +139,49 @@ int recv_and_dispatch(int i) {
         }
         handle_action_event(sockArr[i], &actionPayload);
     }
+    else if (type == MSG_READY && payload_len == 0) {
+        client_ready[i] = true;
+        // 모든 클라이언트가 준비되었는지 확인
+        bool all_ready = true;
+        for (int j = 1; j < numOfClnt; j++) {
+            if (!client_ready[j]) {
+                all_ready = false;
+                break;
+            }
+        }
+        if (all_ready) {
+            // GAME_START 이벤트 브로드캐스트
+            MsgHeader h = {
+                .type = MSG_GAME_EVENT,
+                .length = htonl(sizeof(PayloadGameEvent))
+            };
+            PayloadGameEvent ev = { .event_type = GAME_START };
+            broadcast_all(&h, sizeof(h));
+            broadcast_all(&ev, sizeof(ev));
+
+            // 2) 현재 등록된 모든 엔티티 위치를 스냅샷 형태로 브로드캐스트
+            for (int e = 0; e < entityCount; ++e) {
+                Entity* ent = &entityArr[e];
+                if (!ent->alive) continue;
+
+                // PayloadStateUpdate 생성
+                PayloadStateUpdate upd = {
+                    .entityId = htonl(ent->entity_id),
+                    .x = ent->x,
+                    .y = ent->y,
+                    .role = ent->type  // ENTITY_DEFENDER or ENTITY_ATTACKER
+                };
+                MsgHeader uh = {
+                    .type = MSG_STATE_UPDATE,
+                    .length = htonl(sizeof(upd))
+                };
+                // 헤더/페이로드 순으로 브로드캐스트
+                broadcast_all(&uh, sizeof(uh));
+                broadcast_all(&upd, sizeof(upd));
+            }
+        }
+        return 0;
+    }
     else {
         // 정의되지 않은 메시지 → 길이 확인해서 덤프
         if (payload_len > 512) {
@@ -164,9 +213,10 @@ void remove_client_at(int index) {
     // 배열 압축
     sockArr[index] = sockArr[numOfClnt - 1];
     eventArr[index] = eventArr[numOfClnt - 1];
+    client_ready[index] = client_ready[numOfClnt - 1];
 
-    --numOfClnt;
-    --index;
+    numOfClnt--;
+    index--;
 }
 
 // 클라이언트 종료 전: 방어자인지 확인하고 리셋

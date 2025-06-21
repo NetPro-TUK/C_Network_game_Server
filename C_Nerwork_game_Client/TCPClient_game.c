@@ -2,8 +2,8 @@
 #include <winsock2.h>
 #include <conio.h>
 #include <stdio.h>
-#include <windows.h>
 #include <stdbool.h>
+#include <windows.h>
 
 #include "protocol.h"
 #include "net_client.h"
@@ -27,6 +27,7 @@ volatile RoleStatus role_status = ROLE_STATUS_PENDING; // 역할 상태
 volatile uint32_t my_entity_id = 0;    // 내 엔티티 ID
 volatile int socket_disconnected = 0;  // 소켓 끊김 여부
 int role = 0;                          // 내 역할 (0: 공격자, 1: 방어자)
+static bool game_started = false;      // 게임 시작 여부
 
 // 유효 좌표 여부 확인
 bool is_valid_position(int x, int y) {
@@ -45,6 +46,7 @@ void erase_entity(EntityView* ent) {
     else if (ent->type == ENTITY_ATTACKER) erase_attacker(ent->x, ent->y);
 }
 
+// 수신 스레드
 // 수신 스레드
 DWORD WINAPI recv_server_thread(LPVOID arg) {
     SOCKET sock = *(SOCKET*)arg;
@@ -66,20 +68,32 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
             role_status = ROLE_STATUS_APPROVED;
         }
         else if (header.type == MSG_GAME_EVENT && len == sizeof(PayloadGameEvent)) {
-            PayloadGameEvent payload;
-            recv_full(sock, &payload, sizeof(payload));
-            if (payload.event_type == PLAYER_REJECTED) {
+            PayloadGameEvent p;
+            recv_full(sock, &p, sizeof(p));
+            if (p.event_type == GAME_START) {
+                // 1) 로컬 화면 초기화 (main()에서 system("cls")와 draw_border()는 이미 호출됨)
+                for (int i = 0; i < MAX_ENTITIES; ++i) {
+                    view_entities[i].active = 0;
+                }
+                game_started = true;
+            }
+            else if (p.event_type == PLAYER_REJECTED) {
                 role_status = ROLE_STATUS_REJECTED;
             }
         }
-        else if (header.type == MSG_STATE_UPDATE && len == sizeof(PayloadStateUpdate)) {
+        // **게임 시작 신호를 받은 후에만 상태 업데이트 처리**
+        else if (game_started && header.type == MSG_STATE_UPDATE && len == sizeof(PayloadStateUpdate)) {
             PayloadStateUpdate payload;
             recv_full(sock, &payload, sizeof(payload));
+
             uint32_t id = ntohl(payload.entityId);
-            int x = payload.x, y = payload.y, type = payload.role;
+            int      x = payload.x;
+            int      y = payload.y;
+            int      type = payload.role;
 
             if (!is_valid_position(x, y)) continue;
 
+            // 기존 엔티티 갱신
             for (int i = 0; i < MAX_ENTITIES; ++i) {
                 if (view_entities[i].active && view_entities[i].entity_id == id) {
                     erase_entity(&view_entities[i]);
@@ -90,7 +104,7 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                     goto CONTINUE;
                 }
             }
-
+            // 새 엔티티 등록
             for (int i = 0; i < MAX_ENTITIES; ++i) {
                 if (!view_entities[i].active) {
                     view_entities[i].entity_id = id;
@@ -109,6 +123,7 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
             continue;
         }
         else {
+            // 나머지 메시지(또는 game_started==false시 STATE_UPDATE) 무시
             char dummy[512];
             if (len <= sizeof(dummy)) recv_full(sock, dummy, len);
         }
@@ -136,6 +151,7 @@ int main(void) {
 
 	init_console_sync(); // 콘솔 동기화 초기화
 
+    // 1) 역할 선택 & 서버 접속
     while (1) {
         printf("역할을 선택하세요: [1] 방어자 (DEFENDER), [2] 공격자 (ATTACKER): ");
         scanf("%d", &role);
@@ -174,17 +190,46 @@ int main(void) {
         break;
     }
 
+    // 역할 선택 완료 후, 게임 시작 전용 대기 화면
+    system("cls");
+    printf("====================================\n");
+    printf("    역할: %s 로 선택되었습니다.\n",
+        role == 1 ? "방어자" : "공격자");
+    printf("\n");
+    printf("    게임을 시작하려면 ENTER 키를 누르세요.\n");
+    printf("====================================\n");
+
+    while (_getch() != '\r');
+    printf("준비가 완료되면 ENTER 키를 누르세요.\n");
+    while (_getch() != '\r');
+    while (_kbhit()) _getch();
+    send_ready(hSocket, my_entity_id);
+    printf("상대 플레이어 준비 중… 잠시만 기다려 주세요.\n");
+    while (!game_started) {
+        if (socket_disconnected) {
+            puts("서버 연결이 끊어졌습니다.");
+            return 1;
+        }
+		Sleep(50);
+    }
+
+    // 2) 기존 게임 화면 초기화
     hide_cursor();
     system("cls");
     draw_border();
 
+    // 3) 초기 위치 전송 및 안내문
     int x = (role == 1) ? 70 : 1;
     int y = FIELD_HEIGHT / 2;
 
     send_state_update(hSocket, my_entity_id, x, y);
 
     draw_status(role == 1 ? "방어자" : "공격자"); 
+    if (role == 1) {
+        draw_defender(x, y);
+    }
 
+    // 4) 플레이 루프
     if (role == 1) {
         while (1) {
             if (_kbhit()) {
@@ -211,6 +256,7 @@ int main(void) {
         }
     }
 
+    // 5) 종료 처리
     show_cursor();
     cleanup_console_sync();   
     closesocket(hSocket);

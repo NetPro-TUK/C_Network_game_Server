@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
 // 서버에 TCP 연결을 시도하는 함수
 SOCKET connect_to_server(const char* ip, int port) {
     WSADATA wsaData;
@@ -51,6 +52,14 @@ void send_join_and_get_id(SOCKET sock, int role) {
     send_full(sock, &joinPayload, sizeof(joinPayload));
 }
 
+// 게임 준비
+void send_ready(SOCKET sock, uint32_t my_entity_id) {
+    MsgHeader h = {
+        .type = MSG_READY,
+        .length = htonl(0)
+    };
+    send_full(sock, &h, sizeof(h));
+}
 
 void send_state_update(SOCKET sock, uint32_t id, int x, int y) {
     // 상태 정보 페이로드 생성

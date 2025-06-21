@@ -7,7 +7,6 @@ Entity entityArr[MAX_ENTITY];
 int entityCount = 0;
 static uint32_t nextEntityId = 1;
 
-
 void init_entity_system() {
     memset(entityArr, 0, sizeof(entityArr));
     entityCount = 0;
