@@ -88,7 +88,7 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                 draw_border();
 
                 // 3) 게임 오버 메시지 중앙 혹은 아래쪽에 출력
-                gotoxy((FIELD_WIDTH - 12) / 2, FIELD_HEIGHT / 2);
+                gotoxy((FIELD_WIDTH - 24) / 2, FIELD_HEIGHT / 2);
                 printf("===> GAME OVER <===\n");
                 gotoxy((FIELD_WIDTH - 24) / 2, FIELD_HEIGHT / 2 + 2);
                 printf("Press 'Q' to quit...\n");
