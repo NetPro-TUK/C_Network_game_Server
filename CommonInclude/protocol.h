@@ -1,63 +1,64 @@
-#ifndef PROTOCOL_H
+ï»¿#ifndef PROTOCOL_H
 #define PROTOCOL_H
 
-#include <stdint.h>  // C Ç¥ÁØ Á¤¼öÇü Á¤ÀÇ
+#include <stdint.h>  // C í‘œì¤€ ì •ìˆ˜í˜• ì •ì˜
 
-// ¸Ş½ÃÁö Å¸ÀÔ Á¤ÀÇ
+// ë©”ì‹œì§€ íƒ€ì… ì •ì˜
 typedef enum {
-    MSG_STATE_UPDATE = 1,   // »óÅÂ ¾÷µ¥ÀÌÆ®
-    MSG_ACTION_EVENT = 2,   // ¾×¼Ç ÀÌº¥Æ®
-    MSG_JOIN = 3,           // ¿ªÇÒ ¼±ÅÃ¿ë
-    MSG_GAME_EVENT = 4,     // °ÔÀÓ ÀÌº¥Æ® (¿¹: °ÔÀÓ ½ÃÀÛ, Á¾·á µî)
-    MSG_JOIN_ACK = 5,       // Å¬¶ó¿¡°Ô ¿£Æ¼Æ¼ ID Àü´Ş¿ë
-    MSG_READY = 6           // Å¬¶óÀÌ¾ğÆ® ¡æ ¼­¹ö: ÁØºñ ¿Ï·á ½ÅÈ£
+    MSG_STATE_UPDATE = 1,   // ìƒíƒœ ì—…ë°ì´íŠ¸
+    MSG_ACTION_EVENT = 2,   // ì•¡ì…˜ ì´ë²¤íŠ¸
+    MSG_JOIN = 3,           // ì—­í•  ì„ íƒìš©
+    MSG_GAME_EVENT = 4,     // ê²Œì„ ì´ë²¤íŠ¸ (ì˜ˆ: ê²Œì„ ì‹œì‘, ì¢…ë£Œ ë“±)
+    MSG_JOIN_ACK = 5,       // í´ë¼ì—ê²Œ ì—”í‹°í‹° ID ì „ë‹¬ìš©
+    MSG_READY = 6           // í´ë¼ì´ì–¸íŠ¸ â†’ ì„œë²„: ì¤€ë¹„ ì™„ë£Œ ì‹ í˜¸
 } MsgType;
 
-// °ÔÀÓ ÀÌº¥Æ® Å¸ÀÔ Á¤ÀÇ
+// ê²Œì„ ì´ë²¤íŠ¸ íƒ€ì… ì •ì˜
 typedef enum {
     GAME_OVER = 1,
     GAME_WIN = 2,
     PLAYER_REJECTED = 3,
-    GAME_START = 4,          // ¼­¹ö ¡æ Å¬¶óÀÌ¾ğÆ®: °ÔÀÓ ½ÃÀÛ ½ÅÈ£
+    GAME_START = 4,          // ì„œë²„ â†’ í´ë¼ì´ì–¸íŠ¸: ê²Œì„ ì‹œì‘ ì‹ í˜¸
     ENTITY_REMOVE = 5,
-    RESPAWN_REQUEST = 6,     //¸®½ºÆù ¿äÃ» Å¸ÀÔ Ãß°¡
-    RELOAD_COMPLETE = 7      // ¼­¹ö ¡æ Å¬¶ó: ÀçÀåÀü ¿Ï·á ¾Ë¸²
+    RESPAWN_REQUEST = 6,     //ë¦¬ìŠ¤í° ìš”ì²­ íƒ€ì… ì¶”ê°€
+    RELOAD_COMPLETE = 7,      // ì„œë²„ â†’ í´ë¼: ì¬ì¥ì „ ì™„ë£Œ ì•Œë¦¼
+    SCORE_UPDATE = 8    // âœ… ì ìˆ˜ ì „ì†¡ì„ ìœ„í•œ ê²Œì„ ì´ë²¤íŠ¸ íƒ€ì… ì¶”ê°€
 } GameEventType;
 
-// °ÔÀÓ ÀÌº¥Æ® ÆäÀÌ·Îµå ±¸Á¶Ã¼
+// ê²Œì„ ì´ë²¤íŠ¸ í˜ì´ë¡œë“œ êµ¬ì¡°ì²´
 typedef struct {
-    GameEventType event_type;  // 1: °ÔÀÓ ¿À¹ö, 2: ½Â¸® µî, 3: ¹æ¾îÀÚ Áßº¹ ¿äÃ» °ÅºÎ
-    uint32_t     entityId;     // ³×Æ®¿öÅ© ¹ÙÀÌÆ® ¼ø¼­
+    GameEventType event_type;  // 1: ê²Œì„ ì˜¤ë²„, 2: ìŠ¹ë¦¬ ë“±, 3: ë°©ì–´ì ì¤‘ë³µ ìš”ì²­ ê±°ë¶€
+    uint32_t     entityId;     // ë„¤íŠ¸ì›Œí¬ ë°”ì´íŠ¸ ìˆœì„œ
 } PayloadGameEvent;
 
-// ¸Ş½ÃÁö Çì´õ ±¸Á¶Ã¼
+// ë©”ì‹œì§€ í—¤ë” êµ¬ì¡°ì²´
 typedef struct {
-    uint32_t length;    // ÆäÀÌ·Îµå ±æÀÌ (³×Æ®¿öÅ© ¹ÙÀÌÆ® ¼ø¼­)
-    MsgType  type;      // ¸Ş½ÃÁö Å¸ÀÔ
+    uint32_t length;    // í˜ì´ë¡œë“œ ê¸¸ì´ (ë„¤íŠ¸ì›Œí¬ ë°”ì´íŠ¸ ìˆœì„œ)
+    MsgType  type;      // ë©”ì‹œì§€ íƒ€ì…
 } MsgHeader;
 
-// ¿ªÇÒ ¼±ÅÃ ÆäÀÌ·Îµå (Å¬¶ó -> ¼­¹ö)
+// ì—­í•  ì„ íƒ í˜ì´ë¡œë“œ (í´ë¼ -> ì„œë²„)
 typedef struct {
-    int role;           // 1: ¹æ¾îÀÚ(DEFENDER), 2: °ø°İÀÚ(ATTACKER)
+    int role;           // 1: ë°©ì–´ì(DEFENDER), 2: ê³µê²©ì(ATTACKER)
 } PayloadJoin;
 
 typedef struct {
-    uint32_t entityId;     // ¼­¹ö°¡ ºÎ¿©ÇÑ ¿£ÅÍÆ¼ ID
-    int role;              // ENTITY_DEFENDER ¶Ç´Â ENTITY_ATTACKER
+    uint32_t entityId;     // ì„œë²„ê°€ ë¶€ì—¬í•œ ì—”í„°í‹° ID
+    int role;              // ENTITY_DEFENDER ë˜ëŠ” ENTITY_ATTACKER
 } PayloadJoinAck;
 
-// »óÅÂ ¾÷µ¥ÀÌÆ® ÆäÀÌ·Îµå ±¸Á¶Ã¼
+// ìƒíƒœ ì—…ë°ì´íŠ¸ í˜ì´ë¡œë“œ êµ¬ì¡°ì²´
 typedef struct {
-    uint32_t entityId;  // ¿£Æ¼Æ¼ ID (³×Æ®¿öÅ© ¹ÙÀÌÆ® ¼ø¼­)
-    int    x, y;        // À§Ä¡ ÁÂÇ¥
-    int role;           // ENTITY_DEFENDER ¶Ç´Â ENTITY_ATTACKER
+    uint32_t entityId;  // ì—”í‹°í‹° ID (ë„¤íŠ¸ì›Œí¬ ë°”ì´íŠ¸ ìˆœì„œ)
+    int    x, y;        // ìœ„ì¹˜ ì¢Œí‘œ
+    int role;           // ENTITY_DEFENDER ë˜ëŠ” ENTITY_ATTACKER
 } PayloadStateUpdate;
 
-// ¾×¼Ç ÀÌº¥Æ® ÆäÀÌ·Îµå ±¸Á¶Ã¼
+// ì•¡ì…˜ ì´ë²¤íŠ¸ í˜ì´ë¡œë“œ êµ¬ì¡°ì²´
 typedef struct {
-    uint32_t shooterId;     // ¹ß»çÀÚ ¿£Æ¼Æ¼ ID (³×Æ®¿öÅ© ¹ÙÀÌÆ® ¼ø¼­)
-    uint32_t bulletId;      // ÃÑ¾Ë ¿£Æ¼Æ¼ ID (³×Æ®¿öÅ© ¹ÙÀÌÆ® ¼ø¼­)
-    int    dirX, dirY;      // ¹æÇâ º¤ÅÍ (¿¹: -1, 0, 1) 
+    uint32_t shooterId;     // ë°œì‚¬ì ì—”í‹°í‹° ID (ë„¤íŠ¸ì›Œí¬ ë°”ì´íŠ¸ ìˆœì„œ)
+    uint32_t bulletId;      // ì´ì•Œ ì—”í‹°í‹° ID (ë„¤íŠ¸ì›Œí¬ ë°”ì´íŠ¸ ìˆœì„œ)
+    int    dirX, dirY;      // ë°©í–¥ ë²¡í„° (ì˜ˆ: -1, 0, 1) 
 } PayloadActionEvent;
 
 

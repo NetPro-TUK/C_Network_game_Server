@@ -278,8 +278,18 @@ void check_collision() {
                     
                     // 점수 증가
                     current_score++;
-                    LOG_INFO("Bullet hit attacker → removed entities %u(attacker), %u(bullet)",
-                        attacker->entity_id, bullet->entity_id);
+                    // 점수 전송
+                    PayloadGameEvent score_ev = {
+                        .event_type = SCORE_UPDATE,
+                        .entityId = htonl(current_score)  // 점수 값을 entityId 자리에 실어 보냄
+                    };
+                    MsgHeader score_hdr = {
+                        .type = MSG_GAME_EVENT,
+                        .length = htonl(sizeof(score_ev))
+                    };
+                    broadcast_all(&score_hdr, sizeof(score_hdr));
+                    broadcast_all(&score_ev, sizeof(score_ev));
+
 
                     // 2) MSG_GAME_EVENT(ENTITY_REMOVE) 이벤트 페이로드 준비
                     PayloadGameEvent ev;
