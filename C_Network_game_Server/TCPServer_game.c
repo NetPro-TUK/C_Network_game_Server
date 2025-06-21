@@ -7,9 +7,7 @@
 #define TICK_INTERVAL_MS 50   // 게임 틱 간격: 20 FPS 기준 (50ms 간격)
 #define AUTO_MOVE_MS     120  // 공격자 자동 이동 간격
 
-// 점수 관련 변수 (전역 또는 main 위에 static으로)
-static uint64_t game_start_time_ms = 0;
-static uint64_t last_score_time = 0;
+// 점수 관련 변수 
 static uint32_t current_score = 0;
 
 int main() {
@@ -65,16 +63,6 @@ int main() {
                 auto_move_attackers();
                 lastAutoMv = now;
             }
-
-            // 시간에 따른 점수 증가 처리
-            //if (game_started) {
-            //    uint64_t now_ms = current_time_ms();  // game_logic.c의 함수
-            //    if (now_ms - last_score_time >= 1000) {
-            //        current_score++;
-            //        last_score_time = now_ms;
-            //        printf("Server> SCORE: %u\n", current_score);
-            //    }
-            //}
 
             // 게임 오버 처리
             if (server_game_over) {

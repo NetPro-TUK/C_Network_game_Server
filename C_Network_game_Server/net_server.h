@@ -13,7 +13,6 @@ extern int numOfClnt;	// 생성된 클라이언트 개수
 bool game_started;
 bool server_game_over;
 
-
 // 서버 초기화 및 포트 바인딩
 int		init_server_socket(int port);
 

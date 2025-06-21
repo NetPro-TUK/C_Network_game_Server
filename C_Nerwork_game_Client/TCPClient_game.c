@@ -32,6 +32,7 @@ volatile int wants_respawn = 0;
 
 // 점수 측정을 위한 시작 시간
 uint64_t client_game_start_time = 0;
+uint64_t client_last_survival_display = 0;
 
 bool is_valid_position(int x, int y) {
     return x > 0 && x < FIELD_WIDTH - 1 && y > 0 && y < FIELD_HEIGHT - 1;
@@ -62,6 +63,8 @@ void redraw_full_screen() {
     }
 }
 
+
+
 DWORD WINAPI recv_server_thread(LPVOID arg) {
     SOCKET sock = *(SOCKET*)arg;
 
@@ -85,42 +88,29 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
             PayloadGameEvent p;
             recv_full(sock, &p, sizeof(p));
             if (p.event_type == GAME_START) {
-                for (int i = 0; i < MAX_ENTITIES; ++i) {
-                    view_entities[i].active = 0;
-                }
+                for (int i = 0; i < MAX_ENTITIES; ++i) view_entities[i].active = 0;
                 game_started = true;
-                client_game_start_time = GetTickCount64(); // 점수용 타이머 시작
-                redraw_full_screen(); // 전체 화면 로딩
+                client_game_start_time = GetTickCount64();
+                client_last_survival_display = client_game_start_time;
+                redraw_full_screen();
             }
             else if (p.event_type == PLAYER_REJECTED) {
                 role_status = ROLE_STATUS_REJECTED;
             }
             else if (p.event_type == OUT_OF_AMMO) {
                 uint32_t id = ntohl(p.entityId);
-                for (int k = 0; k < MAX_ENTITIES; ++k) {
-                    if (view_entities[k].entity_id == id) {
-                        if (id == my_entity_id && view_entities[k].type == ENTITY_DEFENDER) {
-                            // 메시지를 화면 아래쪽에 출력
-                            gotoxy(0, FIELD_HEIGHT + 2);
-                            printf("총알이 다 떨어졌습니다. 장전하시겠습니까? (R 키) ");
-                        }
-                    }
+                if (id == my_entity_id) {
+                    gotoxy(0, FIELD_HEIGHT + 2);
+                    printf("총알이 다 떨어졌습니다. 장전하시겠습니까? (R 키) ");
                 }
-
             }
             else if (p.event_type == RELOAD_COMPLETE) {
                 uint32_t id = ntohl(p.entityId);
-                for (int k = 0; k < MAX_ENTITIES; ++k) {
-                    if (view_entities[k].entity_id == id) {
-                        if (id == my_entity_id && view_entities[k].type == ENTITY_DEFENDER) {
-                            redraw_full_screen();
-
-                            gotoxy(0, FIELD_HEIGHT + 2);
-                            printf("재장전이 완료되었습니다.");
-                        }
-                    }
+                if (id == my_entity_id) {
+                    redraw_full_screen();
+                    gotoxy(0, FIELD_HEIGHT + 2);
+                    printf("재장전이 완료되었습니다.");
                 }
-
             }
             else if (p.event_type == ENTITY_REMOVE) {
                 uint32_t id = ntohl(p.entityId);
@@ -129,7 +119,6 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                         view_entities[k].active = 0;
                         erase_entity(&view_entities[k]);
                         if (id == my_entity_id && view_entities[k].type == ENTITY_ATTACKER) {
-                            // 메시지를 화면 아래쪽에 출력
                             gotoxy(0, FIELD_HEIGHT + 2);
                             printf("리스폰하려면 (Y 키)를 누르세요. (Q 키)로 게임 종료. ");
                             wants_respawn = 1;
@@ -140,8 +129,8 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
             }
             else if (p.event_type == SCORE_UPDATE) {
                 uint32_t score = ntohl(p.entityId);
-                gotoxy(FIELD_WIDTH - 18, FIELD_HEIGHT + 1);  // 오른쪽 하단 등 원하는 위치
-                printf("점수: %u    ", score);
+                gotoxy(FIELD_WIDTH - 24, FIELD_HEIGHT + 1);
+                printf("점수: %u ", score);
             }
             else if (p.event_type == GAME_OVER) {
                 system("cls");
@@ -151,7 +140,6 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                 gotoxy((FIELD_WIDTH - 24) / 2, FIELD_HEIGHT / 2 + 2);
                 printf("Press 'Q' to quit...\n");
 
-                // 점수 출력
                 uint64_t now = GetTickCount64();
                 uint32_t score = (uint32_t)((now - client_game_start_time) / 1000);
                 gotoxy((FIELD_WIDTH - 24) / 2, FIELD_HEIGHT / 2 + 4);
@@ -200,17 +188,24 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                     break;
                 }
             }
-            // 화면 초기화 및 다시 그리기
+
             if (id == my_entity_id && wants_respawn && entType == ENTITY_ATTACKER) {
                 wants_respawn = 0;
-                // 1. 전체 화면 초기화 및 다시 그리기
                 redraw_full_screen();
-
-                // 2. 리스폰 완료 메시지를 하단 고정 위치에 출력
                 gotoxy(0, FIELD_HEIGHT + 2);
                 printf("리스폰 완료!\n");
             }
+
         CONTINUE:
+            // 생존 시간 출력 (매 1초 간격)
+            uint64_t now = GetTickCount64();
+            if (now - client_last_survival_display >= 1000) {
+                client_last_survival_display = now;
+                uint32_t elapsed = (uint32_t)((now - client_game_start_time) / 1000);
+                gotoxy(FIELD_WIDTH - 24, FIELD_HEIGHT + 2);
+                printf("생존 시간: %us   ", elapsed);
+            }
+
             continue;
         }
         else {
@@ -220,6 +215,7 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
     }
     return 0;
 }
+
 
 int main(void) {
     SOCKET hSocket;

@@ -11,8 +11,6 @@
 uint32_t defender_owner_id = 0;
 
 // 다른 .c 파일에 정의된 전역 변수 참조용 extern 선언
-extern uint64_t game_start_time_ms;
-extern uint64_t last_score_time;
 extern uint32_t current_score;
 
 // 클라이언트가 JOIN 요청을 보냈을 때 처리하는 함수
