@@ -1,6 +1,7 @@
+// 공용 헤더 파일
 #include "entity.h"
+
 #include <string.h>
-#include <winsock2.h>
 
 Entity entityArr[MAX_ENTITY];
 int entityCount = 0;

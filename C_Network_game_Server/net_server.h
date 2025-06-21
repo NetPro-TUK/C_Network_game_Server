@@ -28,6 +28,10 @@ void	broadcast_all(const void* buf, int len);
 // 클라이언트 종료 처리
 void remove_client_at(int index);
 
+// 클라이언트 종료 시 방어자 소켓 초기화
+void reset_defender_if_match(SOCKET closingSock);
+
 // 클라이언트 ID 생성 함수
 uint32_t generate_client_id();
+
 #endif

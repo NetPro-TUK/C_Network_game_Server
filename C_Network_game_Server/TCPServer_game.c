@@ -5,8 +5,6 @@
 
 #define TICK_INTERVAL_MS 50  // 게임 틱 간격: 20 FPS 기준 (50ms 간격)
 
-void reset_defender_if_match(SOCKET closingSock);
-
 int main() {
     // 서버 소켓 초기화 및 바인딩
     SOCKET serverSock = init_server_socket(9000);
@@ -71,20 +69,4 @@ int main() {
     closesocket(serverSock);
     WSACleanup();
     return 0;
-}
-
-// 클라이언트 종료 전: 방어자인지 확인하고 리셋
-void reset_defender_if_match(SOCKET closingSock) {
-    for (int i = 0; i < entityCount; ++i) {
-        if (!entityArr[i].alive) continue;
-
-        if (entityArr[i].sock == closingSock) {
-            if (entityArr[i].owner_client_id == defender_owner_id) {
-                defender_owner_id = 0;
-                printf("Server> 방어자 종료 → defender_owner_id 초기화됨\n");
-            }
-            entityArr[i].alive = 0;
-            break;
-        }
-    }
 }

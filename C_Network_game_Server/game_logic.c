@@ -1,9 +1,11 @@
-﻿#include "entity.h"
+﻿// 공용 헤더 파일
+#include "entity.h"
 #include "protocol.h"
-#include "game_logic.h"
-#include "net_server.h"
 #include "log.h"
 #include "net_utils.h"
+// 서버 헤더 파일
+#include "game_logic.h"
+#include "net_server.h"
 
 uint32_t defender_owner_id = 0;
 

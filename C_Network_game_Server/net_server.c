@@ -1,8 +1,10 @@
-#include "net_server.h"
+// 공용 헤더 파일
 #include "protocol.h"
 #include "net_utils.h"
 #include "log.h"
 #include "entity.h"
+// 서버 헤더 파일
+#include "net_server.h"
 #include "game_logic.h"
 #include <stdio.h>
 #include <string.h>
@@ -51,9 +53,6 @@ int init_server_socket(int port) {
     return hServSock;
 }
 
-// ------------------------------
-// 클라이언트 접속 수락 및 이벤트 등록
-// ------------------------------
 // 클라이언트 송수신 소켓 생성
 void accept_new_client(SOCKET serverSock) {
     SOCKET hClntSock;
@@ -73,9 +72,6 @@ void accept_new_client(SOCKET serverSock) {
     numOfClnt++;
 }
 
-// ------------------------------
-// 클라이언트로부터 메시지 수신 및 처리 분기
-// ------------------------------
 // 클라이언트 메세지 수신 및 타입 별 처리
 int recv_and_dispatch(int i) {
     MsgHeader header;
@@ -158,7 +154,6 @@ int recv_and_dispatch(int i) {
     return 0;
 }
 
-// ------------------------------
 // 클라이언트 연결 종료 및 소켓 제거
 void remove_client_at(int index) {
     if (index < 0 || index >= numOfClnt) return;
@@ -174,6 +169,21 @@ void remove_client_at(int index) {
     --index;
 }
 
+// 클라이언트 종료 전: 방어자인지 확인하고 리셋
+void reset_defender_if_match(SOCKET closingSock) {
+    for (int i = 0; i < entityCount; ++i) {
+        if (!entityArr[i].alive) continue;
+
+        if (entityArr[i].sock == closingSock) {
+            if (entityArr[i].owner_client_id == defender_owner_id) {
+                defender_owner_id = 0;
+                printf("Server> 방어자 종료 → defender_owner_id 초기화됨\n");
+            }
+            entityArr[i].alive = 0;
+            break;
+        }
+    }
+}
 
 // 특정 클라이언트에게 메세지 전송
 void send_to_client(SOCKET sock, const void* buf, int len) {
