@@ -18,12 +18,14 @@ typedef enum {
     GAME_OVER = 1,
     GAME_WIN = 2,
     PLAYER_REJECTED = 3,
-    GAME_START = 4          // 서버 → 클라이언트: 게임 시작 신호
+    GAME_START = 4,          // 서버 → 클라이언트: 게임 시작 신호
+    MSG_ENTITY_REMOVE = 5
 } GameEventType;
 
 // 게임 이벤트 페이로드 구조체
 typedef struct {
     GameEventType event_type;  // 1: 게임 오버, 2: 승리 등, 3: 방어자 중복 요청 거부
+    uint32_t     entityId;     // 네트워크 바이트 순서
 } PayloadGameEvent;
 
 // 메시지 헤더 구조체

@@ -242,25 +242,50 @@ void check_collision() {
             int dx = abs(a->x - b->x);
             int dy = abs(a->y - b->y);
 
-            // 충돌 조건: 같은 위치에 있음
             if (dx <= COLLISION_RADIUS && dy <= COLLISION_RADIUS) {
-                // 총알 vs 공격자
-                if ((a->type == ENTITY_BULLET && b->type == ENTITY_ATTACKER) ||
-                    (a->type == ENTITY_ATTACKER && b->type == ENTITY_BULLET)) {
-
-                    mark_entity_dead(a->entity_id);
-                    mark_entity_dead(b->entity_id);
-                    LOG_INFO("Bullet hit attacker");
+                // --- 총알 vs 공격자 충돌 처리 ---
+                Entity* bullet = NULL, * attacker = NULL;
+                if (a->type == ENTITY_BULLET && b->type == ENTITY_ATTACKER) {
+                    bullet = a;
+                    attacker = b;
+                }
+                else if (b->type == ENTITY_BULLET && a->type == ENTITY_ATTACKER) {
+                    bullet = b;
+                    attacker = a;
                 }
 
-                // 방어자 vs 공격자
-                else if ((a->type == ENTITY_DEFENDER && b->type == ENTITY_ATTACKER) ||
-                    (a->type == ENTITY_ATTACKER && b->type == ENTITY_DEFENDER)) {
+                if (bullet && attacker) {
+                    // 1) 서버 내부 상태에서 둘 다 죽음으로 표시
+                    mark_entity_dead(attacker->entity_id);
+                    mark_entity_dead(bullet->entity_id);
+                    LOG_INFO("Bullet hit attacker → removed entities %u(attacker), %u(bullet)",
+                        attacker->entity_id, bullet->entity_id);
 
+                    // 2) MSG_GAME_EVENT(MSG_ENTITY_REMOVE) 이벤트 페이로드 준비
+                    PayloadGameEvent ev;
+                    ev.event_type = MSG_ENTITY_REMOVE;
+                    MsgHeader hdr = {
+                        .length = htonl(sizeof(ev)),
+                        .type = MSG_GAME_EVENT
+                    };
+
+                    // ▶ 공격자 삭제 알림
+                    ev.entityId = htonl(attacker->entity_id);
+                    broadcast_all(&hdr, sizeof(hdr));
+                    broadcast_all(&ev, sizeof(ev));
+
+                    // ▶ 총알 삭제 알림
+                    ev.entityId = htonl(bullet->entity_id);
+                    broadcast_all(&hdr, sizeof(hdr));
+                    broadcast_all(&ev, sizeof(ev));
+                }
+
+                // --- 방어자 vs 공격자 충돌 (게임 오버) 처리 ---
+                else if ((a->type == ENTITY_DEFENDER && b->type == ENTITY_ATTACKER) ||
+                    (b->type == ENTITY_DEFENDER && a->type == ENTITY_ATTACKER)) {
                     mark_entity_dead(a->entity_id);
                     mark_entity_dead(b->entity_id);
                     LOG_WARN("Player hit by attacker → Game Over");
-                    // 게임 오버
                     check_game_over();
                 }
             }

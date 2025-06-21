@@ -82,6 +82,21 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
             else if (p.event_type == PLAYER_REJECTED) {
                 role_status = ROLE_STATUS_REJECTED;
             }
+            else if (p.event_type == MSG_ENTITY_REMOVE) {
+                // 엔티티 ID 복원
+                uint32_t removeId = ntohl(p.entityId);
+
+                // view_entities에서 찾아서 inactive + 화면 지우기
+                for (int k = 0; k < MAX_ENTITIES; ++k) {
+                    if (view_entities[k].active && view_entities[k].entity_id == removeId) {
+                        // 로컬 상태 갱신
+                        view_entities[k].active = 0;
+                        // 렌더러(화면)에서 즉시 지우기
+                        erase_entity(&view_entities[k]);
+                        break;
+                    }
+                }
+            }
             else if (p.event_type == GAME_OVER) {
                 // 1) 기존 화면 완전 삭제
                 system("cls");
