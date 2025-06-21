@@ -63,8 +63,6 @@ void redraw_full_screen() {
     }
 }
 
-
-
 DWORD WINAPI recv_server_thread(LPVOID arg) {
     SOCKET sock = *(SOCKET*)arg;
 
@@ -135,15 +133,22 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
             else if (p.event_type == GAME_OVER) {
                 system("cls");
                 draw_border();
-                gotoxy((FIELD_WIDTH - 24) / 2, FIELD_HEIGHT / 2);
-                printf("===> GAME OVER <===\n");
-                gotoxy((FIELD_WIDTH - 24) / 2, FIELD_HEIGHT / 2 + 2);
-                printf("Press 'Q' to quit...\n");
 
                 uint64_t now = GetTickCount64();
-                uint32_t score = (uint32_t)((now - client_game_start_time) / 1000);
-                gotoxy((FIELD_WIDTH - 24) / 2, FIELD_HEIGHT / 2 + 4);
+                uint32_t survival_time = (uint32_t)((now - client_game_start_time) / 1000);
+                uint32_t score = survival_time;  // 생존 시간이 점수가 되는 경우
+
+                gotoxy((FIELD_WIDTH - 24) / 2, FIELD_HEIGHT / 2);
+                printf("===> GAME OVER <===\n");
+
+                gotoxy((FIELD_WIDTH - 30) / 2, FIELD_HEIGHT / 2 + 2);
                 printf("총 점수: %u 점\n", score);
+
+                gotoxy((FIELD_WIDTH - 30) / 2, FIELD_HEIGHT / 2 + 3);
+                printf("생존 시간: %u 초\n", survival_time);
+
+                gotoxy((FIELD_WIDTH - 30) / 2, FIELD_HEIGHT / 2 + 5);
+                printf("Press 'Q' to quit...\n");
 
                 int ch;
                 do {
