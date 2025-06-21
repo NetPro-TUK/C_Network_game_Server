@@ -6,7 +6,7 @@
 // 메시지 타입 정의
 typedef enum {
     MSG_STATE_UPDATE = 1,   // 상태 업데이트
-    MSG_ACTION_EVENT = 2,   // 액션 이벤트
+    MSG_SHOOTING_EVENT = 2, // 슈팅 이벤트
     MSG_JOIN = 3,           // 역할 선택용
     MSG_GAME_EVENT = 4,     // 게임 이벤트 (예: 게임 시작, 종료 등)
     MSG_JOIN_ACK = 5,       // 클라에게 엔티티 ID 전달용
@@ -56,12 +56,12 @@ typedef struct {
     int role;           // ENTITY_DEFENDER 또는 ENTITY_ATTACKER
 } PayloadStateUpdate;
 
-// 액션 이벤트 페이로드 구조체
+// 슈팅 이벤트 페이로드 구조체
 typedef struct {
     uint32_t shooterId;     // 발사자 엔티티 ID (네트워크 바이트 순서)
     uint32_t bulletId;      // 총알 엔티티 ID (네트워크 바이트 순서)
     int    dirX, dirY;      // 방향 벡터 (예: -1, 0, 1) 
-} PayloadActionEvent;
+} PayloadShootingEvent;
 
 
 #endif /* PROTOCOL_H */

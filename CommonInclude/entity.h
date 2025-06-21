@@ -21,11 +21,6 @@ typedef struct {
 	int vx, vy;					// 이동 방향 (예: -1, 0, 1)
     int alive;					// 1: 살아있음, 0: 죽음
 	SOCKET sock; 			    // 엔티티가 연결된 소켓 (필요시)
-
-	// 추가 기능 구현을 위한 필드
-	int ammo;
-	int reloading;
-	uint64_t reload_start_time_ms;
 } Entity;
 
 extern Entity entityArr[MAX_ENTITY];

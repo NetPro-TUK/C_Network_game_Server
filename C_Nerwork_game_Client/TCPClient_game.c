@@ -77,7 +77,7 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
         }
 
         uint32_t len = ntohl(header.length);
-
+        
         if (header.type == MSG_JOIN_ACK && len == sizeof(PayloadJoinAck)) {
             PayloadJoinAck payload;
             recv_full(sock, &payload, sizeof(payload));
@@ -309,7 +309,7 @@ int main(void) {
                     }
                     else if (vk == VK_SPACE) {
                         static uint32_t bullet_id_seq = 100000;
-                        send_action_event(hSocket, my_entity_id, bullet_id_seq++, -1, 0);
+                        send_shooting_event(hSocket, my_entity_id, bullet_id_seq++, -1, 0);
                     }
                     else if (vk == 'R') {
                         send_reload_request(hSocket, my_entity_id);
@@ -333,7 +333,7 @@ int main(void) {
 
                     // 리스폰 여부 판단
                     if (wants_respawn) {
-                        if (vk == 0x59) {
+                        if (vk == 0x59) { // Y 키
                             // 리스폰 요청
                             MsgHeader hdr = {
                                 .type = MSG_GAME_EVENT,

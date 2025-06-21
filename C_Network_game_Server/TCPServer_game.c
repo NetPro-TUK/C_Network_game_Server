@@ -66,7 +66,7 @@ int main() {
 
             // 게임 오버 처리
             if (server_game_over) {
-                printf("Server> GAME OVER, Final Score: %u\n", current_score);
+                printf("Server> GAME OVER");
                 break;
             }
         }

@@ -78,13 +78,13 @@ void send_state_update(SOCKET sock, uint32_t id, int x, int y) {
     send_full(sock, &statePayload, sizeof(statePayload));
 }
 
-void send_action_event(SOCKET sock, uint32_t shooter_id, uint32_t bullet_id, int dirX, int dirY) {
+void send_shooting_event(SOCKET sock, uint32_t shooter_id, uint32_t bullet_id, int dirX, int dirY) {
     MsgHeader header;
-    PayloadActionEvent payload;
+    PayloadShootingEvent payload;
 
     // 헤더 구성
-    header.length = htonl(sizeof(PayloadActionEvent));  // 네트워크 바이트 순서로 변환
-    header.type = MSG_ACTION_EVENT;                   // enum 값 그대로 전송
+    header.length = htonl(sizeof(PayloadShootingEvent));  // 네트워크 바이트 순서로 변환
+    header.type = MSG_SHOOTING_EVENT;                   // enum 값 그대로 전송
 
     // 페이로드 구성
     payload.shooterId = htonl(shooter_id);
@@ -94,7 +94,7 @@ void send_action_event(SOCKET sock, uint32_t shooter_id, uint32_t bullet_id, int
 
     // 전송
     send(sock, (char*)&header, sizeof(MsgHeader), 0);
-    send(sock, (char*)&payload, sizeof(PayloadActionEvent), 0);
+    send(sock, (char*)&payload, sizeof(PayloadShootingEvent), 0);
 }
 
 void send_reload_request(SOCKET sock, uint32_t entity_id) {

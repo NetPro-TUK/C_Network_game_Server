@@ -15,6 +15,11 @@ extern uint32_t current_score;
 
 static int attacker_speed = 1;  // 전역 속도 관리 변수
 
+// 방어자 관련 전역 변수
+static int ammo = 20;  // 방어자의 초기 총알 수
+static int reloading = 0;  // 방어자 재장전 상태
+static uint64_t reload_start_time_ms = 0;  // 재장전 시작 시간
+
 
 // 클라이언트가 JOIN 요청을 보냈을 때 처리하는 함수
 void handle_join(SOCKET client_fd, PayloadJoin* payload) {
@@ -83,8 +88,7 @@ uint64_t current_time_ms() {
 }
 
 // 총알 발사 이벤트를 처리하는 함수
-void handle_action_event(SOCKET client_fd, PayloadActionEvent* payload) {
-    // 발사자 ID를 바탕으로 엔터티 검색
+void handle_shooting_event(SOCKET client_fd, PayloadShootingEvent* payload) {
     uint32_t shooter_id = ntohl(payload->shooterId);
     uint32_t bullet_id = ntohl(payload->bulletId);
 
@@ -93,20 +97,35 @@ void handle_action_event(SOCKET client_fd, PayloadActionEvent* payload) {
         LOG_WARN("Shooter not found");
         return;
     }
-    if (shooter->ammo <= 0) {
-        // LOG_INFO("Shooter has no ammo left.");
-        return;
-    }
 
-    shooter->ammo--;
-    // 총알 생성
+    if (shooter->type == ENTITY_DEFENDER) {
+        if (reloading) {
+            LOG_INFO("Defender is reloading.");
+            return;
+        }
+        if (ammo <= 0) {
+            LOG_INFO("Defender has no ammo left.");
+            MsgHeader header = {
+                .type = MSG_GAME_EVENT,
+                .length = htonl(sizeof(PayloadGameEvent))
+            };
+            PayloadGameEvent p = {
+                .event_type = OUT_OF_AMMO,
+                .entityId = htonl(shooter_id)
+            };
+            send_full(client_fd, &header, sizeof(header));
+            send_full(client_fd, &p, sizeof(p));
+            return;
+        }
+        ammo--;  // 전역 변수 감소
+    }
     Entity* bullet = create_entity(ENTITY_BULLET, shooter->owner_client_id, client_fd);
     if (!bullet) {
         LOG_WARN("Bullet creation failed: entity limit reached");
         return;
     }
 
-    bullet->entity_id = bullet_id;  // 서버가 아닌 클라이언트가 ID 지정한 경우
+    bullet->entity_id = bullet_id;
     bullet->x = shooter->x;
     bullet->y = shooter->y;
     bullet->vx = payload->dirX;
@@ -116,15 +135,13 @@ void handle_action_event(SOCKET client_fd, PayloadActionEvent* payload) {
     LOG_INFO("Bullet created");
 }
 
-// 재장전 요청을 처리하는 함수
-void handle_reload_request(SOCKET client_fd, uint32_t entity_id) {
-    Entity* e = get_entity_by_id(entity_id);
-    if (!e || e->type != ENTITY_DEFENDER) return;
-    if (e->ammo == 20 || e->reloading) return;
 
-    e->reloading = 1;
-    e->reload_start_time_ms = current_time_ms();  // 타이머 시작
-    LOG_INFO("Reload started by entity %u", entity_id);
+// 재장전 요청을 처리하는 함수
+void handle_reload_request() {
+    if (ammo == 20 || reloading) return;
+    reloading = 1;
+    reload_start_time_ms = current_time_ms();  // 타이머 시작
+    LOG_INFO("Reload started");
 }
 
 // 랜덤으로 공격자들을 이동시키는 함수
@@ -162,43 +179,41 @@ void game_tick() {
         seeded = 1;
     }
 
-
     // (추가 기능) 방어자 재장전 상태 갱신
-    for (int i = 0; i < entityCount; ++i) {
-        Entity* e = &entityArr[i];
-        if (e->alive && e->type == ENTITY_DEFENDER) {
-            if (e->reloading) {
-                uint64_t now = current_time_ms();
-                if (now - e->reload_start_time_ms >= 3000) {
-                    e->ammo = 20;
-                    e->reloading = 0;
-                    LOG_INFO("Reload complete for entity %u", e->entity_id);
+    if (reloading) {
+        uint64_t now = current_time_ms();
+        if (now - reload_start_time_ms >= 3000) {
+            ammo = 20;
+            reloading = 0;
+            LOG_INFO("Reload complete");
 
-                    // 재장전 완료 알림 전송
-                    MsgHeader header;
-                    header.type = MSG_GAME_EVENT;
-                    header.length = htonl(sizeof(PayloadGameEvent));
-
-                    PayloadGameEvent payload;
-                    payload.event_type = RELOAD_COMPLETE;
-                    payload.entityId = htonl(e->entity_id);
-
-                    send_full(e->sock, &header, sizeof(header));
-                    send_full(e->sock, &payload, sizeof(payload));
-                }
+            // 클라이언트에게 알림 전송
+            MsgHeader header = {
+                .type = MSG_GAME_EVENT,
+                .length = htonl(sizeof(PayloadGameEvent))
+            };
+            PayloadGameEvent payload = {
+                .event_type = RELOAD_COMPLETE,
+                .entityId = htonl(defender_owner_id)  // 방어자 ID
+            };
+            for (int i = 1; i < numOfClnt; ++i) {
+                send_full(sockArr[i], &header, sizeof(header));
+                send_full(sockArr[i], &payload, sizeof(payload));
             }
-            else if (e->ammo <= 0) {
-                LOG_INFO("Shooter has no ammo left.");
-                MsgHeader header;
-                header.type = MSG_GAME_EVENT;
-                header.length = htonl(sizeof(PayloadGameEvent));
-
-                PayloadGameEvent payload;
-                payload.event_type = OUT_OF_AMMO;
-
-                send_full(e->sock, &header, sizeof(header));
-                send_full(e->sock, &payload, sizeof(payload));
-            }
+        }
+    }
+    if (ammo <= 0) {
+        MsgHeader header = {
+                .type = MSG_GAME_EVENT,
+                .length = htonl(sizeof(PayloadGameEvent))
+        };
+        PayloadGameEvent payload = {
+            .event_type = OUT_OF_AMMO,
+            .entityId = htonl(defender_owner_id)
+        };
+        for (int i = 1; i < numOfClnt; ++i) {
+            send_full(sockArr[i], &header, sizeof(header));
+            send_full(sockArr[i], &payload, sizeof(payload));
         }
     }
 

@@ -112,6 +112,7 @@ int recv_and_dispatch(int i) {
     //printf("Server> [RECV] Header: type=%d, length=%u\n", type, payload_len);
 
     // --- 메시지 종류 분기 처리 ---
+    // 1. 역할 선택 메시지 처리
     if (type == MSG_JOIN && payload_len == sizeof(PayloadJoin)) {
         PayloadJoin joinPayload;
         ret = recv_full(sockArr[i], &joinPayload, sizeof(joinPayload));
@@ -122,6 +123,7 @@ int recv_and_dispatch(int i) {
         }
         handle_join(sockArr[i], &joinPayload);
     }
+    // 2. 상태 업데이트 메시지 처리 
     else if (type == MSG_STATE_UPDATE && payload_len == sizeof(PayloadStateUpdate)) {
         PayloadStateUpdate payload;
         ret = recv_full(sockArr[i], &payload, sizeof(payload));
@@ -141,7 +143,7 @@ int recv_and_dispatch(int i) {
             LOG_WARN("Unknown entity ID in MSG_STATE_UPDATE");
         }
     }
-    // recv_and_dispatch 내부의 MSG_READY 처리부 수정
+    // 3. 준비 완료 메시지 처리
     else if (type == MSG_READY && payload_len == 0) {
         Entity* e = find_entity_by_sock(sockArr[i]);
         if (!e) {
@@ -195,16 +197,18 @@ int recv_and_dispatch(int i) {
 
         return 0;
     }
-    else if (type == MSG_ACTION_EVENT && payload_len == sizeof(PayloadActionEvent)) {
-        PayloadActionEvent actionPayload;
+    // 4. 슈팅 이벤트 메시지 처리
+    else if (type == MSG_SHOOTING_EVENT && payload_len == sizeof(PayloadShootingEvent)) {
+        PayloadShootingEvent actionPayload;
         ret = recv_full(sockArr[i], &actionPayload, sizeof(actionPayload));
         if (ret <= 0) {
             printf("[DEBUG] PayloadActionEvent 수신 실패 (ret=%d, err=%d)\n",
                 ret, WSAGetLastError());
             return 0;
         }
-        handle_action_event(sockArr[i], &actionPayload);
+        handle_shooting_event(sockArr[i], &actionPayload);
     }
+    // 5. 게임 이벤트 메시지 처리
     else if (type == MSG_GAME_EVENT && payload_len == sizeof(PayloadGameEvent)) {
         PayloadGameEvent ev;
         recv_full(sockArr[i], &ev, sizeof(ev));
@@ -212,20 +216,23 @@ int recv_and_dispatch(int i) {
         GameEventType type = ev.event_type;
         uint32_t entityId = ntohl(ev.entityId);
 
+        // 1) 리스폰 요청 이벤트 처리
         if (type == RESPAWN_REQUEST) {
             LOG_INFO("리스폰 요청 수신: entityId = %u", entityId);
 
-            // 1. 먼저 해당 ID가 이미 살아있는지 확인
+            // - 1 먼저 해당 ID가 이미 살아있는지 확인
             Entity* existing = get_entity_by_id(entityId);
             if (existing && existing->alive) {
                 LOG_WARN("리스폰 요청 거부: entityId=%u 이미 활성 상태", entityId);
                 return 0;
             }
 
-            // 2. 이제 새로 생성 (중복 없음 보장됨)
-            Entity* e = create_entity(ENTITY_ATTACKER, 1, rand() % SCREEN_HEIGHT);
+            // - 2 새로운 엔티티 생성
+            Entity* e = create_entity(ENTITY_ATTACKER, entityId, sockArr[i]);
             if (e) {
                 e->entity_id = entityId;
+                e->x = 0;
+                e->y = rand() % SCREEN_HEIGHT; // 랜덤 Y 위치
 
                 // 클라이언트에 상태 전송
                 PayloadStateUpdate update = {
@@ -242,9 +249,10 @@ int recv_and_dispatch(int i) {
                 broadcast_all(&update, sizeof(update));
             }
         }
+        // 2) 재장전 요청 이벤트 처리
 		else if (type == RELOAD_REQUEST) {
 			LOG_INFO("재장전 요청 수신: entityId = %u", entityId);
-			handle_reload_request(sockArr[i], entityId);
+			handle_reload_request();
 		}
 		else {
 			printf("[DEBUG] 알 수 없는 게임 이벤트 타입: %d\n", type);
