@@ -47,7 +47,6 @@ void erase_entity(EntityView* ent) {
 }
 
 // 수신 스레드
-// 수신 스레드
 DWORD WINAPI recv_server_thread(LPVOID arg) {
     SOCKET sock = *(SOCKET*)arg;
 
@@ -91,6 +90,13 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
             int      y = payload.y;
             int      type = payload.role;
 
+
+            // 디버그 로그: ID, 좌표, role 출력
+            printf("[CLIENT_LOG] STATE_UPDATE → id=%u, x=%d, y=%d, role=%d (%s)\n",
+                id, x, y, role,
+                role == ENTITY_DEFENDER ? "DEFENDER" :
+                role == ENTITY_ATTACKER ? "ATTACKER" : "UNKNOWN");
+
             if (!is_valid_position(x, y)) continue;
 
             // 기존 엔티티 갱신
@@ -111,10 +117,7 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                     view_entities[i].x = x;
                     view_entities[i].y = y;
                     view_entities[i].active = 1;
-                    view_entities[i].type =
-                        (id == my_entity_id)
-                        ? (role == 1 ? ENTITY_DEFENDER : ENTITY_ATTACKER)
-                        : ENTITY_ATTACKER;
+                    view_entities[i].type = (EntityType)payload.role;
                     draw_entity(&view_entities[i]);
                     break;
                 }
@@ -199,8 +202,6 @@ int main(void) {
     printf("    게임을 시작하려면 ENTER 키를 누르세요.\n");
     printf("====================================\n");
 
-    while (_getch() != '\r');
-    printf("준비가 완료되면 ENTER 키를 누르세요.\n");
     while (_getch() != '\r');
     while (_kbhit()) _getch();
     send_ready(hSocket, my_entity_id);

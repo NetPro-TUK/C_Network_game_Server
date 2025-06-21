@@ -95,8 +95,7 @@ int recv_and_dispatch(int i) {
     MsgType type = header.type;              // protocol.h에서 type이 1바이트(enum)이면 ntohl 불필요
     uint32_t payload_len = ntohl(header.length); // length 는 4바이트 네트워크 순서
 
-    printf("Server> [RECV] Header: type=%d, length=%u\n",
-        type, payload_len);
+    //printf("Server> [RECV] Header: type=%d, length=%u\n", type, payload_len);
 
     // --- 메시지 종류 분기 처리 ---
     if (type == MSG_JOIN && payload_len == sizeof(PayloadJoin)) {
@@ -113,13 +112,12 @@ int recv_and_dispatch(int i) {
         PayloadStateUpdate payload;
         ret = recv_full(sockArr[i], &payload, sizeof(payload));
         if (ret <= 0) {
-            // ← 여기서 ret, WSAGetLastError() 찍어 보기
             printf("[DEBUG] PayloadStateUpdate 수신 실패 (ret=%d, err=%d)\n",
                 ret, WSAGetLastError());
-            // **소켓 닫기 대신 일단 리턴 0으로 연결 유지**
             return 0;
         }
         uint32_t id = ntohl(payload.entityId);
+        printf("Server> [STATE_UPDATE] entityId=%u, x=%d, y=%d, role=%d\n", id, payload.x, payload.y, payload.role);
         Entity* ent = get_entity_by_id(id);
         if (ent) {
             update_entity_state(ent->entity_id,

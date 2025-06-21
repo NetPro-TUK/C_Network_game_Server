@@ -139,6 +139,18 @@ void send_state_update() {
             send_full(sock, &header, sizeof(header));
             send_full(sock, &payload, sizeof(payload));
         }
+
+        // ▶ 디버그 로그 추가
+        printf("[SERVER_LOG] SEND STATE_UPDATE → id=%u, x=%d, y=%d, role=%d (%s)\n",
+            ent->entity_id,
+            ent->x,
+            ent->y,
+            ent->type,
+            ent->type == ENTITY_ATTACKER ? "ATTACKER" :
+            ent->type == ENTITY_DEFENDER ? "DEFENDER" :
+            ent->type == ENTITY_BULLET ? "BULLET" :
+            "UNKNOWN");
+
     }
 }
 
