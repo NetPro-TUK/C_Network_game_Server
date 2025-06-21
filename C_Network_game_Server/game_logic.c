@@ -13,6 +13,9 @@ uint32_t defender_owner_id = 0;
 // 다른 .c 파일에 정의된 전역 변수 참조용 extern 선언
 extern uint32_t current_score;
 
+static int attacker_speed = 1;  // 전역 속도 관리 변수
+
+
 // 클라이언트가 JOIN 요청을 보냈을 때 처리하는 함수
 void handle_join(SOCKET client_fd, PayloadJoin* payload) {
     EntityType type;
@@ -129,25 +132,29 @@ void handle_reload_request(SOCKET client_fd, uint32_t entity_id) {
 
 // 랜덤으로 공격자들을 이동시키는 함수
 void auto_move_attackers() {
+    static int attacker_speed = 1;  // 속도 초기값 설정
+
     for (int i = 0; i < entityCount; ++i) {
         Entity* e = &entityArr[i];
         if (!e->alive) continue;
 
         if (e->type == ENTITY_ATTACKER) {
-            // 1) 수평 이동: 오른쪽으로 1칸, 필드 끝 도달 시 왼쪽으로 감싸기
-            e->x++;
+            e->x += attacker_speed;  // 속도만큼 이동
+
             if (e->x >= SCREEN_WIDTH) {
                 e->x = 1;
+                attacker_speed++;  // 벽에 도달할 때마다 속도 증가
+                if (attacker_speed > 5) attacker_speed = 5;  // 속도 최대 제한
             }
 
-            // 2) 수직 이동: -1, 0, +1 중 랜덤
             int dir = (rand() % 3) - 1;
             e->y += dir;
-            if (e->y < 1)                e->y = 1;
+            if (e->y < 1) e->y = 1;
             if (e->y >= SCREEN_HEIGHT - 1) e->y = SCREEN_HEIGHT - 2;
         }
     }
 }
+
 
 // 게임 틱 처리 함수
 void game_tick() {
