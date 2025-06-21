@@ -5,8 +5,8 @@
 #include "protocol.h"
 
 // 화면 경계 (콘솔 기준으로 자유롭게 조정)
-#define SCREEN_WIDTH 100
-#define SCREEN_HEIGHT 150
+#define SCREEN_WIDTH 80
+#define SCREEN_HEIGHT 25
 
 extern uint32_t defender_owner_id;
 
