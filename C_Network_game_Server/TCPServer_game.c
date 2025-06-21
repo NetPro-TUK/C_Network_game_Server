@@ -73,6 +73,12 @@ int main() {
                 auto_move_attackers();
                 lastAutoMv = now;
             }
+
+            // 3) 게임 오버 시 서버 루프 종료
+            if (server_game_over) {
+                printf("Server> GAME OVER, shutting down server loop.\n");
+                break;
+            }
         }
     }
 

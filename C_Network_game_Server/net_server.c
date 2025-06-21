@@ -12,6 +12,8 @@
 
 bool defender_ready = false;
 bool attacker_ready = false;
+bool game_started = false;
+bool server_game_over = false;
 
 // 클라이언트 소켓과 이벤트 핸들 배열
 SOCKET sockArr[MAX_CLIENT];     // 클라이언트 소켓 배열
@@ -20,7 +22,7 @@ bool    client_ready[MAX_CLIENT];
 int numOfClnt = 0;              // 현재 접속한 클라이언트 수
 static uint32_t client_id = 1;
 
-bool game_started = false;
+
 
 
 // 서버 소켓 초기화 및 리슨

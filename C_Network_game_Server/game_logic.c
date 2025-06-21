@@ -257,4 +257,5 @@ void check_game_over() {
             send_full(sockArr[i], &payload, sizeof(payload));
         }
     }
+    server_game_over = true;
 }
