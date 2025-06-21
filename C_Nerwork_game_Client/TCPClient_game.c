@@ -50,6 +50,17 @@ void erase_entity(EntityView* ent) {
     else if (ent->type == ENTITY_ATTACKER) erase_attacker(ent->x, ent->y);
     else if (ent->type == ENTITY_BULLET) erase_bullet(ent->x, ent->y);
 }
+// 통합 렌더링
+void redraw_full_screen() {
+    system("cls");
+    draw_border();
+    draw_status(role == 1 ? "방어자" : "공격자");
+    for (int i = 0; i < MAX_ENTITIES; ++i) {
+        if (view_entities[i].active) {
+            draw_entity(&view_entities[i]);
+        }
+    }
+}
 
 DWORD WINAPI recv_server_thread(LPVOID arg) {
     SOCKET sock = *(SOCKET*)arg;
@@ -78,7 +89,11 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                     view_entities[i].active = 0;
                 }
                 game_started = true;
+<<<<<<< Updated upstream
                 client_game_start_time = GetTickCount64();  // 점수용 타이머 시작
+=======
+                redraw_full_screen();  // 전체 화면 로딩
+>>>>>>> Stashed changes
             }
             else if (p.event_type == PLAYER_REJECTED) {
                 role_status = ROLE_STATUS_REJECTED;
@@ -90,7 +105,13 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                         view_entities[k].active = 0;
                         erase_entity(&view_entities[k]);
                         if (id == my_entity_id && view_entities[k].type == ENTITY_ATTACKER) {
+<<<<<<< Updated upstream
                             printf("💀 공격자가 사망했습니다. 리스폰 하시겠습니까? (S 키)\n");
+=======
+                            // 메시지를 화면 아래쪽에 출력
+                            gotoxy(0, FIELD_HEIGHT + 2);
+                            printf("공격자가 사망했습니다. 리스폰 하시겠습니까? (y 키) ");
+>>>>>>> Stashed changes
                             wants_respawn = 1;
                         }
                         break;
@@ -153,6 +174,17 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                     draw_entity(&view_entities[i]);
                     break;
                 }
+            }
+            // 화면 초기화 및 다시 그리기
+            if (id == my_entity_id && wants_respawn && entType == ENTITY_ATTACKER) {
+                wants_respawn = 0;
+
+                // 1. 전체 화면 초기화 및 다시 그리기
+                redraw_full_screen();
+
+                // 2. 리스폰 완료 메시지를 하단 고정 위치에 출력
+                gotoxy(0, FIELD_HEIGHT + 2);
+                printf("리스폰 완료!\n");
             }
         CONTINUE:
             continue;
@@ -259,13 +291,23 @@ int main(void) {
             Sleep(50);
         }
     }
+<<<<<<< Updated upstream
     else {
         while (!socket_disconnected) {
+=======
+    else { // 공격자
+        while (1) {
+            if (socket_disconnected) break;
+    
+            // 콘솔 키 이벤트 처리
+>>>>>>> Stashed changes
             if (PeekConsoleInput(hStdin, &rec, 1, &cnt) && cnt > 0) {
                 ReadConsoleInput(hStdin, &rec, 1, &cnt);
+
                 if (rec.EventType == KEY_EVENT && rec.Event.KeyEvent.bKeyDown) {
                     WORD vk = rec.Event.KeyEvent.wVirtualKeyCode;
                     if (vk == VK_ESCAPE) break;
+<<<<<<< Updated upstream
                     else if (wants_respawn && vk == 'S') {
                         PayloadGameEvent ev = { .event_type = RESPAWN_REQUEST, .entityId = htonl(my_entity_id) };
                         MsgHeader hdr = { .type = MSG_GAME_EVENT, .length = htonl(sizeof(ev)) };
@@ -273,6 +315,29 @@ int main(void) {
                         send(hSocket, (char*)&ev, sizeof(ev), 0);
                         printf("🔁 리스폰 요청을 보냈습니다!\n");
                         wants_respawn = 0;
+=======
+
+                    // ▶ 리스폰 여부 판단
+                    if (wants_respawn) {
+                        if (vk == 0x59) { // y 키 입력 시
+                            // 리스폰 요청
+                            MsgHeader hdr = {
+                                .type = MSG_GAME_EVENT,
+                                .length = htonl(sizeof(PayloadGameEvent))
+                            };
+                            PayloadGameEvent ev = {
+                                .event_type = RESPAWN_REQUEST,
+                                .entityId = htonl(my_entity_id)
+                            };
+                            send(hSocket, (char*)&hdr, sizeof(hdr), 0);
+                            send(hSocket, (char*)&ev, sizeof(ev), 0);
+                        }
+                        else {
+                            // Y 이외 키 → 종료
+                            printf("게임에서 퇴장합니다.\n");
+                            break;
+                        }
+>>>>>>> Stashed changes
                     }
                 }
             }
