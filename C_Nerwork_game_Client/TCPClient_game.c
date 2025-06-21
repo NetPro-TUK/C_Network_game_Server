@@ -230,27 +230,32 @@ int main(void) {
     }
 
     // 4) 플레이 루프
-    if (role == 1) {
+    if (role == 1) { // 방어자
         while (1) {
-            if (_kbhit()) {
-                int key = _getch();
-                if (key == 27) break;
-                if (key == 224) {
-                    key = _getch();
-                    if (key == 72 && y > 1) y--;
-                    else if (key == 80 && y < FIELD_HEIGHT - 2) y++;
+            if (GetAsyncKeyState(VK_ESCAPE) & 0x8000) break; // ESC 키로 종료
+            if (GetAsyncKeyState(VK_UP) & 0x8000) { // 위쪽 화살표
+                if (y > 1) {
+                    erase_defender(x, y);
+                    y--;
+                    draw_defender(x, y);
                     send_state_update(hSocket, my_entity_id, x, y);
                 }
             }
-            Sleep(20);
+            else if (GetAsyncKeyState(VK_DOWN) & 0x8000) { // 아래쪽 화살표
+                if (y < FIELD_HEIGHT - 2) {
+                    erase_defender(x, y);
+                    y++;
+                    draw_defender(x, y);
+                    send_state_update(hSocket, my_entity_id, x, y);
+                }
+            }
+            // 총알 발사 구현 예정
+            Sleep(50);
         }
     }
-    else {
+    else { // 공격자
         while (1) {
-            if (_kbhit()) {
-                int key = _getch();
-                if (key == 27) break;
-            }
+            if (GetAsyncKeyState(VK_ESCAPE) & 0x8000) break; // ESC 키로 종료
             auto_move_attacker(hSocket, my_entity_id, &x, &y);
             Sleep(120);
         }
