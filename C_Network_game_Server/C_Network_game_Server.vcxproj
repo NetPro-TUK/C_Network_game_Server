@@ -137,7 +137,6 @@
     <ClCompile Include="TCPServer_game.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="entity.h" />
     <ClInclude Include="game_logic.h" />
     <ClInclude Include="net_server.h" />
   </ItemGroup>

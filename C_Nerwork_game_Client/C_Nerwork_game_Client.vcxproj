@@ -136,7 +136,6 @@
     <ClCompile Include="TCPClient_game.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="entity.h" />
     <ClInclude Include="net_client.h" />
     <ClInclude Include="render.h" />
   </ItemGroup>

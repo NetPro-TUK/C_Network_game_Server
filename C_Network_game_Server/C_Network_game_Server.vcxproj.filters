@@ -32,9 +32,6 @@
     <ClInclude Include="net_server.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="entity.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="game_logic.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
