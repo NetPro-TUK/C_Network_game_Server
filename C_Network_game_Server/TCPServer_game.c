@@ -69,13 +69,10 @@ int main() {
 
             // 2) 자동 이동 전용 타이밍 체크 (120 ms)
             double auto_ms = (double)(now - lastAutoMv) * 1000 / CLOCKS_PER_SEC;
-            if (auto_ms >= AUTO_MOVE_MS) {
+            if (game_started && auto_ms >= AUTO_MOVE_MS) {
                 auto_move_attackers();
                 lastAutoMv = now;
             }
-
-            // 3) 상태 전송
-            send_state_update();
         }
     }
 

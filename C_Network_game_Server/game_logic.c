@@ -42,8 +42,16 @@ void handle_join(SOCKET client_fd, PayloadJoin* payload) {
         LOG_ERROR("엔터티 생성 실패");
         return;
     }
+    // ▶ 시작 위치 설정: 방어자 x=70, 공격자 x=1, y는 필드 중앙
+        ent->y = SCREEN_HEIGHT / 2;  // game_logic.h: SCREEN_HEIGHT = 25
+        if (type == ENTITY_DEFENDER) {
+            ent->x = 70;
+            defender_owner_id = newClientId;
 
-    if (type == ENTITY_DEFENDER) defender_owner_id = newClientId;
+        }
+        else {  // ENTITY_ATTACKER
+            ent->x = 1;
+        }
 
     printf("Server> JOIN: client_fd=%d → entity_id=%u [%s]\n", client_fd, ent->entity_id,
         type == ENTITY_DEFENDER ? "DEFENDER" : "ATTACKER");
@@ -122,27 +130,27 @@ void game_tick() {
         seeded = 1;
     }
 
-    // 1) 기존 엔터티 위치 업데이트 (주로 총알)
-    for (int i = 0; i < entityCount; ++i) {
-        Entity* e = &entityArr[i];
-        if (!e->alive) continue;
-
-        e->x += e->vx;
-        e->y += e->vy;
-
-        // 화면 바깥 나가면 죽음 처리
-        if (e->x < 0 || e->x >= SCREEN_WIDTH ||
-            e->y < 0 || e->y >= SCREEN_HEIGHT) {
-            mark_entity_dead(e->entity_id);
-            LOG_INFO("Entity %d out of bounds → dead", e->entity_id);
+    // 1) 게임이 시작된 후에만 엔터티 이동 & 충돌 처리
+    if (game_started) {
+        // 1-1) 위치 업데이트 (총알 등)
+        for (int i = 0; i < entityCount; ++i) {
+            Entity* e = &entityArr[i];
+            if (!e->alive) continue;
+            e->x += e->vx;
+            e->y += e->vy;
+            if (e->x < 0 || e->x >= SCREEN_WIDTH ||
+                e->y < 0 || e->y >= SCREEN_HEIGHT) {
+                mark_entity_dead(e->entity_id);
+                LOG_INFO("Entity %d out of bounds → dead", e->entity_id);
+            }
         }
+
+        // 1-2) 충돌 검사
+        check_collision();
+
+        // 1-3) 모든 클라이언트에 상태 브로드캐스트
+        send_state_update();
     }
-
-    // 3) 충돌 검사
-    check_collision();
-
-    // 4) 모든 클라이언트에 상태 브로드캐스트
-    send_state_update();
 }
 
 // 엔티티 상태 업데이트를 모든 클라이언트에게 전송하는 함수

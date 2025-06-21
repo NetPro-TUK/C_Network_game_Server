@@ -37,6 +37,15 @@ Entity* get_entity_by_id(uint32_t id) {
     return NULL;
 }
 
+// 소켓 → Entity 매핑 함수
+Entity* find_entity_by_sock(SOCKET sock) {
+    for (int i = 0; i < entityCount; ++i) {
+        if (entityArr[i].alive && entityArr[i].sock == sock)
+            return &entityArr[i];
+    }
+    return NULL;
+}
+
 // 엔티티 상태 업데이트 함수
 void update_entity_state(uint32_t id, int x, int y, int vx, int vy) {
     Entity* ent = get_entity_by_id(id);

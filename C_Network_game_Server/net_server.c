@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <string.h>
-#include <stdbool.h>
 // 공용 헤더 파일
 #include "protocol.h"   
 #include "net_utils.h"
@@ -11,12 +10,18 @@
 #include "game_logic.h"
 
 
+bool defender_ready = false;
+bool attacker_ready = false;
+
 // 클라이언트 소켓과 이벤트 핸들 배열
 SOCKET sockArr[MAX_CLIENT];     // 클라이언트 소켓 배열
 WSAEVENT eventArr[MAX_CLIENT];  // 각 소켓에 대한 이벤트 핸들
 bool    client_ready[MAX_CLIENT];  
 int numOfClnt = 0;              // 현재 접속한 클라이언트 수
 static uint32_t client_id = 1;
+
+bool game_started = false;
+
 
 // 서버 소켓 초기화 및 리슨
 int init_server_socket(int port) {
@@ -127,27 +132,26 @@ int recv_and_dispatch(int i) {
             LOG_WARN("Unknown entity ID in MSG_STATE_UPDATE");
         }
     }
-    else if (type == MSG_ACTION_EVENT && payload_len == sizeof(PayloadActionEvent)) {
-        PayloadActionEvent actionPayload;
-        ret = recv_full(sockArr[i], &actionPayload, sizeof(actionPayload));
-        if (ret <= 0) {
-            printf("[DEBUG] PayloadActionEvent 수신 실패 (ret=%d, err=%d)\n",
-                ret, WSAGetLastError());
-            return 0;
-        }
-        handle_action_event(sockArr[i], &actionPayload);
-    }
+    // recv_and_dispatch 내부의 MSG_READY 처리부 수정
     else if (type == MSG_READY && payload_len == 0) {
-        client_ready[i] = true;
-        // 모든 클라이언트가 준비되었는지 확인
-        bool all_ready = true;
-        for (int j = 1; j < numOfClnt; j++) {
-            if (!client_ready[j]) {
-                all_ready = false;
-                break;
-            }
+        Entity* e = find_entity_by_sock(sockArr[i]);
+        if (!e) {
+            LOG_WARN("알 수 없는 소켓에서 MSG_READY 수신");
+            return -1;
         }
-        if (all_ready) {
+
+        // 역할별로 준비 표시
+        if (e->type == ENTITY_DEFENDER) {
+            defender_ready = true;
+            printf("Server> DEFENDER ready\n");
+        }
+        else if (e->type == ENTITY_ATTACKER) {
+            attacker_ready = true;
+            printf("Server> ATTACKER ready\n");
+        }
+
+        // 둘 다 준비됐을 때만 게임 시작
+        if (defender_ready && attacker_ready) {
             // GAME_START 이벤트 브로드캐스트
             MsgHeader h = {
                 .type = MSG_GAME_EVENT,
@@ -157,28 +161,40 @@ int recv_and_dispatch(int i) {
             broadcast_all(&h, sizeof(h));
             broadcast_all(&ev, sizeof(ev));
 
-            // 2) 현재 등록된 모든 엔티티 위치를 스냅샷 형태로 브로드캐스트
-            for (int e = 0; e < entityCount; ++e) {
-                Entity* ent = &entityArr[e];
+            // 게임 시작 상태
+            game_started = true;
+
+            // 엔티티 위치 스냅샷 브로드캐스트
+            for (int eidx = 0; eidx < entityCount; ++eidx) {
+                Entity* ent = &entityArr[eidx];
                 if (!ent->alive) continue;
 
-                // PayloadStateUpdate 생성
                 PayloadStateUpdate upd = {
                     .entityId = htonl(ent->entity_id),
                     .x = ent->x,
                     .y = ent->y,
-                    .role = ent->type  // ENTITY_DEFENDER or ENTITY_ATTACKER
+                    .role = ent->type
                 };
                 MsgHeader uh = {
                     .type = MSG_STATE_UPDATE,
                     .length = htonl(sizeof(upd))
                 };
-                // 헤더/페이로드 순으로 브로드캐스트
                 broadcast_all(&uh, sizeof(uh));
                 broadcast_all(&upd, sizeof(upd));
             }
         }
+
         return 0;
+    }
+    else if (type == MSG_ACTION_EVENT && payload_len == sizeof(PayloadActionEvent)) {
+        PayloadActionEvent actionPayload;
+        ret = recv_full(sockArr[i], &actionPayload, sizeof(actionPayload));
+        if (ret <= 0) {
+            printf("[DEBUG] PayloadActionEvent 수신 실패 (ret=%d, err=%d)\n",
+                ret, WSAGetLastError());
+            return 0;
+        }
+        handle_action_event(sockArr[i], &actionPayload);
     }
     else {
         // 정의되지 않은 메시지 → 길이 확인해서 덤프

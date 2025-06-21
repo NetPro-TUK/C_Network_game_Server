@@ -200,17 +200,9 @@ int main(void) {
     system("cls");
     draw_border();
 
-    // 3) 초기 위치 전송 및 안내문
+    // 3) 초기 위치 설정
     int x = (role == 1) ? 70 : 1;
     int y = FIELD_HEIGHT / 2;
-
-    send_state_update(hSocket, my_entity_id, x, y);
-
-    draw_status(role == 1 ? "방어자" : "공격자"); 
-    if (role == 1) {
-        draw_defender(x, y);
-    }
-
 
     // 4) 플레이 루프 시작 전: 내 콘솔 윈도우 핸들 얻기
     HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
@@ -220,7 +212,6 @@ int main(void) {
 
 
     // 4) 플레이 루프
-// 4) 플레이 루프
     if (role == 1) { // 방어자
         while (1) {
             // 콘솔 입력 버퍼에서 이벤트가 쌓였으면 하나 가져오기
