@@ -56,7 +56,7 @@ void draw_defender(int x, int y) {
     if (x < 0 || x >= FIELD_WIDTH || y < 0 || y >= FIELD_HEIGHT) return;
     EnterCriticalSection(&g_console_cs);
     locked_gotoxy(x, y);            // 지정 좌표로 이동
-    putchar(PLAYER_CHAR);           // 플레이어 문자 출력 (기본값: 'A')
+    putchar(DEFENDER_CHAR);           // 플레이어 문자 출력 (기본값: 'A')
     LeaveCriticalSection(&g_console_cs);
 }
 
@@ -74,7 +74,7 @@ void draw_attacker(int x, int y) {
     if (x < 0 || x >= FIELD_WIDTH || y < 0 || y >= FIELD_HEIGHT) return;
     EnterCriticalSection(&g_console_cs);
     locked_gotoxy(x, y);
-    putchar('X');
+    putchar(ATTACKER_CHAR);
     LeaveCriticalSection(&g_console_cs);
 }
 
@@ -87,6 +87,23 @@ void erase_attacker(int x, int y) {
     LeaveCriticalSection(&g_console_cs);
 }
 
+// 총알을 (x, y) 위치에 출력하는 함수
+void draw_bullet(int x, int y) {
+	if (x < 0 || x >= FIELD_WIDTH || y < 0 || y >= FIELD_HEIGHT) return;
+	EnterCriticalSection(&g_console_cs);
+	locked_gotoxy(x, y);
+	putchar(BULLET_CHAR);
+	LeaveCriticalSection(&g_console_cs);
+}
+
+// 총알을 지우는 함수 (공백으로 덮어쓰기)
+void erase_bullet(int x, int y) {
+	if (x < 0 || x >= FIELD_WIDTH || y < 0 || y >= FIELD_HEIGHT) return;
+	EnterCriticalSection(&g_console_cs);
+	locked_gotoxy(x, y);
+	putchar(' ');
+	LeaveCriticalSection(&g_console_cs);
+}
 
 // 테두리를 민트색으로 그리는 함수
 void draw_border(void) {

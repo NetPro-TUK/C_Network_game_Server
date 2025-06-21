@@ -38,12 +38,14 @@ void draw_entity(EntityView* ent) {
     if (!is_valid_position(ent->x, ent->y)) return;
     if (ent->type == ENTITY_DEFENDER) draw_defender(ent->x, ent->y);
     else if (ent->type == ENTITY_ATTACKER) draw_attacker(ent->x, ent->y);
+    else if (ent->type == ENTITY_BULLET) draw_bullet(ent->x, ent->y);
 }
 // 엔티티 지우기 함수들
 void erase_entity(EntityView* ent) {
     if (!is_valid_position(ent->x, ent->y)) return;
     if (ent->type == ENTITY_DEFENDER) erase_defender(ent->x, ent->y);
     else if (ent->type == ENTITY_ATTACKER) erase_attacker(ent->x, ent->y);
+    else if (ent->type == ENTITY_BULLET) erase_bullet(ent->x, ent->y);
 }
 
 // 수신 스레드
@@ -252,6 +254,12 @@ int main(void) {
                     else if (vk == VK_DOWN && y < FIELD_HEIGHT - 2) {
                         erase_defender(x, y); y++; draw_defender(x, y);
                         send_state_update(hSocket, my_entity_id, x, y);
+                    }
+                    else if (vk == VK_SPACE) {
+                        static uint32_t bullet_id_seq = 100000; // 총알 ID 시퀀스
+                        int dirX = -1;
+                        int dirY = 0;
+                        send_action_event(hSocket, my_entity_id, bullet_id_seq++, dirX, dirY);
                     }
                 }
             }

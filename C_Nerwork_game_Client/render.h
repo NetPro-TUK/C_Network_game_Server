@@ -1,31 +1,36 @@
-#ifndef RENDER_H
+ï»¿#ifndef RENDER_H
 #define RENDER_H
 
 #include <windows.h>
 
 #define FIELD_WIDTH 80
 #define FIELD_HEIGHT 25
-#define PLAYER_CHAR 'A'
+#define DEFENDER_CHAR '<'
+#define ATTACKER_CHAR '@'
+#define BULLET_CHAR '-'
 
-// ÄÜ¼Ö µ¿±âÈ­ ÃÊ±âÈ­/Á¤¸®
+
+// ì½˜ì†” ë™ê¸°í™” ì´ˆê¸°í™”/ì •ë¦¬
 void init_console_sync(void);
 void cleanup_console_sync(void);
 
-// »óÅÂ ¸Þ½ÃÁö ±×¸®±â (µ¿±âÈ­ Æ÷ÇÔ)
+// ìƒíƒœ ë©”ì‹œì§€ ê·¸ë¦¬ê¸° (ë™ê¸°í™” í¬í•¨)
 void draw_status(const char* role_name);
 
-// ÄÜ¼Ö Ä¿¼­ À§Ä¡ ÀÌµ¿ ¹× °¡½Ã¼º Á¦¾î
+// ì½˜ì†” ì»¤ì„œ ìœ„ì¹˜ ì´ë™ ë° ê°€ì‹œì„± ì œì–´
 void gotoxy(int x, int y);
 void hide_cursor();
 void show_cursor();
 
-// ¿£Æ¼Æ¼ ·»´õ¸µ
+// ì—”í‹°í‹° ë Œë”ë§
 void draw_defender(int x, int y);
 void erase_defender(int x, int y);
 void draw_attacker(int x, int y);
 void erase_attacker(int x, int y);
+void draw_bullet(int x, int y);
+void erase_bullet(int x, int y);
 
-// °ÔÀÓ È­¸é Å×µÎ¸® ±×¸®±â
+// ê²Œìž„ í™”ë©´ í…Œë‘ë¦¬ ê·¸ë¦¬ê¸°
 void draw_border();
 
 #endif // RENDER_H
