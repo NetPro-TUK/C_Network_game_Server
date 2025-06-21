@@ -66,15 +66,15 @@ int main() {
                 lastAutoMv = now;
             }
 
-            // 점수 증가 처리
-            if (game_started) {
-                uint64_t now_ms = current_time_ms();  // game_logic.c의 함수
-                if (now_ms - last_score_time >= 1000) {
-                    current_score++;
-                    last_score_time = now_ms;
-                    printf("Server> SCORE: %u\n", current_score);
-                }
-            }
+            // 시간에 따른 점수 증가 처리
+            //if (game_started) {
+            //    uint64_t now_ms = current_time_ms();  // game_logic.c의 함수
+            //    if (now_ms - last_score_time >= 1000) {
+            //        current_score++;
+            //        last_score_time = now_ms;
+            //        printf("Server> SCORE: %u\n", current_score);
+            //    }
+            //}
 
             // 게임 오버 처리
             if (server_game_over) {

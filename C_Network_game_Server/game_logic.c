@@ -275,6 +275,9 @@ void check_collision() {
                     // 1) 서버 내부 상태에서 둘 다 죽음으로 표시
                     mark_entity_dead(attacker->entity_id);
                     mark_entity_dead(bullet->entity_id);
+                    
+                    // 점수 증가
+                    current_score++;
                     LOG_INFO("Bullet hit attacker → removed entities %u(attacker), %u(bullet)",
                         attacker->entity_id, bullet->entity_id);
 
