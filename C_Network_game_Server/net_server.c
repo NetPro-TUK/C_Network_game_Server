@@ -15,6 +15,11 @@ bool attacker_ready = false;
 bool game_started = false;
 bool server_game_over = false;
 
+// 게임 점수 관련 변수
+uint64_t game_start_time_ms = 0;
+uint64_t last_score_time = 0;
+uint32_t current_score = 0;
+
 // 클라이언트 소켓과 이벤트 핸들 배열
 SOCKET sockArr[MAX_CLIENT];     // 클라이언트 소켓 배열
 WSAEVENT eventArr[MAX_CLIENT];  // 각 소켓에 대한 이벤트 핸들
