@@ -242,6 +242,13 @@ int recv_and_dispatch(int i) {
                 broadcast_all(&update, sizeof(update));
             }
         }
+		else if (type == RELOAD_REQUEST) {
+			LOG_INFO("재장전 요청 수신: entityId = %u", entityId);
+			handle_reload_request(sockArr[i], entityId);
+		}
+		else {
+			printf("[DEBUG] 알 수 없는 게임 이벤트 타입: %d\n", type);
+		}
     }
     else {
         // 정의되지 않은 메시지 → 길이 확인해서 덤프

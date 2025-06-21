@@ -197,7 +197,6 @@ void game_tick() {
                 mark_entity_dead(e->entity_id);
                 LOG_INFO("Entity %d out of bounds → dead", e->entity_id);
 
-                // 🔽 여기 추가
                 if (e->type == ENTITY_BULLET) {
                     PayloadGameEvent ev = {
                         .event_type = ENTITY_REMOVE,
