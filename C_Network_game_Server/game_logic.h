@@ -19,6 +19,9 @@ void handle_action_event(SOCKET client_fd, PayloadActionEvent* payload);
 // 게임 틱 처리 함수
 void game_tick();
 
+// 공격자 자동 이동
+void auto_move_attackers(void);
+
 // 엔티티 상태 업데이트 함수
 void send_state_update();
 

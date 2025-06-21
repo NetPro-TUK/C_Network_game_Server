@@ -91,27 +91,57 @@ void handle_action_event(SOCKET client_fd, PayloadActionEvent* payload) {
     LOG_INFO("Bullet created");
 }
 
-// 게임 처리하는 함수
-void game_tick() {
+// 랜덤으로 공격자들을 이동시키는 함수
+void auto_move_attackers() {
     for (int i = 0; i < entityCount; ++i) {
         Entity* e = &entityArr[i];
         if (!e->alive) continue;
 
-        // 위치 업데이트
+        if (e->type == ENTITY_ATTACKER) {
+            // 1) 수평 이동: 오른쪽으로 1칸, 필드 끝 도달 시 왼쪽으로 감싸기
+            e->x++;
+            if (e->x >= SCREEN_WIDTH) {
+                e->x = 1;
+            }
+
+            // 2) 수직 이동: -1, 0, +1 중 랜덤
+            int dir = (rand() % 3) - 1;
+            e->y += dir;
+            if (e->y < 1)                e->y = 1;
+            if (e->y >= SCREEN_HEIGHT - 1) e->y = SCREEN_HEIGHT - 2;
+        }
+    }
+}
+
+// 게임 틱 처리 함수
+void game_tick() {
+    // 0) (서버 한 번만) 난수 시드 초기화 – main() 쪽에 있어도 무방
+    static int seeded = 0;
+    if (!seeded) {
+        srand((unsigned)time(NULL));
+        seeded = 1;
+    }
+
+    // 1) 기존 엔터티 위치 업데이트 (주로 총알)
+    for (int i = 0; i < entityCount; ++i) {
+        Entity* e = &entityArr[i];
+        if (!e->alive) continue;
+
         e->x += e->vx;
         e->y += e->vy;
 
-        // 화면 밖으로 나가면 죽은 것으로 처리
-        if (e->x < 0 || e->x >= SCREEN_WIDTH || e->y < 0 || e->y >= SCREEN_HEIGHT) {
+        // 화면 바깥 나가면 죽음 처리
+        if (e->x < 0 || e->x >= SCREEN_WIDTH ||
+            e->y < 0 || e->y >= SCREEN_HEIGHT) {
             mark_entity_dead(e->entity_id);
-            LOG_INFO("Entity %d is out of bounds and marked dead", e->entity_id);
+            LOG_INFO("Entity %d out of bounds → dead", e->entity_id);
         }
     }
 
-    // 충돌 검사
+    // 3) 충돌 검사
     check_collision();
 
-    // 상태 전송
+    // 4) 모든 클라이언트에 상태 브로드캐스트
     send_state_update();
 }
 

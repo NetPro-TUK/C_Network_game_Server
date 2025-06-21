@@ -129,19 +129,6 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
     return 0;
 }
 
-// 공격자 자동 이동
-void auto_move_attacker(SOCKET sock, uint32_t id, int* x, int* y) {
-    (*x)++;
-    if (*x >= FIELD_WIDTH - 1) *x = 1;
-
-    int dir = (rand() % 3) - 1;  // -1, 0, 1 중 하나
-    *y += dir;
-    if (*y < 1) *y = 1;
-    if (*y >= FIELD_HEIGHT - 1) *y = FIELD_HEIGHT - 2;
-
-    send_state_update(sock, id, *x, *y);
-}
-
 int main(void) {
     srand((unsigned int)time(NULL));
     SOCKET hSocket;
@@ -265,7 +252,6 @@ int main(void) {
                     break;
                 }
             }
-            auto_move_attacker(hSocket, my_entity_id, &x, &y);
             Sleep(120);
         }
     }

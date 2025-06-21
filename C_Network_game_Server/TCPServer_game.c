@@ -4,6 +4,8 @@
 #include "game_logic.h"
 
 #define TICK_INTERVAL_MS 50  // 게임 틱 간격: 20 FPS 기준 (50ms 간격)
+#define AUTO_MOVE_MS     120  // 공격자 자동 이동 간격
+
 
 int main() {
     // 서버 소켓 초기화 및 바인딩
@@ -12,6 +14,8 @@ int main() {
 
     // 게임 루프용 시간 변수 초기화
     clock_t lastTick = clock();
+    clock_t lastAutoMv = lastTick;        // 자동 이동 전용 타이머
+
 
     while (1) {
         // 이벤트 감지 (최대 numOfClnt개 이벤트)
@@ -57,11 +61,21 @@ int main() {
 
         // 게임 틱 처리: 일정 시간 간격으로 게임 상태 갱신
         clock_t now = clock();
-        double elapsed_ms = (double)(now - lastTick) * 1000 / CLOCKS_PER_SEC;
-        if (elapsed_ms >= TICK_INTERVAL_MS) {
-			game_tick();            // 엔터티 상태 업데이트, 충돌 검사 등
-			send_state_update();    // 모든 클라이언트에게 상태 전송
-			lastTick = now;         // 다음 틱 시간 갱신
+        double tick_ms = (double)(now - lastTick) * 1000 / CLOCKS_PER_SEC;
+        if (tick_ms >= TICK_INTERVAL_MS) {
+            // 1) 기본 게임 틱(총알 이동·충돌 등)
+            game_tick();
+            lastTick = now;
+
+            // 2) 자동 이동 전용 타이밍 체크 (120 ms)
+            double auto_ms = (double)(now - lastAutoMv) * 1000 / CLOCKS_PER_SEC;
+            if (auto_ms >= AUTO_MOVE_MS) {
+                auto_move_attackers();
+                lastAutoMv = now;
+            }
+
+            // 3) 상태 전송
+            send_state_update();
         }
     }
 
