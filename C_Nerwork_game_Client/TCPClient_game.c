@@ -26,8 +26,8 @@ EntityView view_entities[MAX_ENTITIES];
 volatile RoleStatus role_status = ROLE_STATUS_PENDING; // 역할 상태
 volatile uint32_t my_entity_id = 0;    // 내 엔티티 ID
 volatile int socket_disconnected = 0;  // 소켓 끊김 여부
-int role = 0;                          // 내 역할 (0: 공격자, 1: 방어자)
 static bool game_started = false;      // 게임 시작 여부
+int role = 0;       // 내 역할 (0: 공격자, 1: 방어자)                   
 
 // 유효 좌표 여부 확인
 bool is_valid_position(int x, int y) {
@@ -60,6 +60,7 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
 
         uint32_t len = ntohl(header.length);
 
+        // 서버의 조인 응답
         if (header.type == MSG_JOIN_ACK && len == sizeof(PayloadJoinAck)) {
             PayloadJoinAck payload;
             recv_full(sock, &payload, sizeof(payload));
@@ -88,14 +89,8 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
             uint32_t id = ntohl(payload.entityId);
             int      x = payload.x;
             int      y = payload.y;
-            int      type = payload.role;
+            int      entType = payload.role;
 
-
-            // 디버그 로그: ID, 좌표, role 출력
-            printf("[CLIENT_LOG] STATE_UPDATE → id=%u, x=%d, y=%d, role=%d (%s)\n",
-                id, x, y, role,
-                role == ENTITY_DEFENDER ? "DEFENDER" :
-                role == ENTITY_ATTACKER ? "ATTACKER" : "UNKNOWN");
 
             if (!is_valid_position(x, y)) continue;
 
@@ -105,7 +100,7 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                     erase_entity(&view_entities[i]);
                     view_entities[i].x = x;
                     view_entities[i].y = y;
-                    view_entities[i].type = type;
+                    view_entities[i].type = entType;
                     draw_entity(&view_entities[i]);
                     goto CONTINUE;
                 }
@@ -131,7 +126,6 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
             if (len <= sizeof(dummy)) recv_full(sock, dummy, len);
         }
     }
-
     return 0;
 }
 
@@ -230,33 +224,47 @@ int main(void) {
         draw_defender(x, y);
     }
 
+
+    // 4) 플레이 루프 시작 전: 내 콘솔 윈도우 핸들 얻기
+    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+
+    INPUT_RECORD rec;
+    DWORD        cnt;
+
+
     // 4) 플레이 루프
+// 4) 플레이 루프
     if (role == 1) { // 방어자
         while (1) {
-            if (GetAsyncKeyState(VK_ESCAPE) & 0x8000) break; // ESC 키로 종료
-            if (GetAsyncKeyState(VK_UP) & 0x8000) { // 위쪽 화살표
-                if (y > 1) {
-                    erase_defender(x, y);
-                    y--;
-                    draw_defender(x, y);
-                    send_state_update(hSocket, my_entity_id, x, y);
+            // 콘솔 입력 버퍼에서 이벤트가 쌓였으면 하나 가져오기
+            if (PeekConsoleInput(hStdin, &rec, 1, &cnt) && cnt > 0) {
+                ReadConsoleInput(hStdin, &rec, 1, &cnt);
+                if (rec.EventType == KEY_EVENT && rec.Event.KeyEvent.bKeyDown) {
+                    WORD vk = rec.Event.KeyEvent.wVirtualKeyCode;
+                    if (vk == VK_ESCAPE) break;
+                    else if (vk == VK_UP && y > 1) {
+                        erase_defender(x, y); y--; draw_defender(x, y);
+                        send_state_update(hSocket, my_entity_id, x, y);
+                    }
+                    else if (vk == VK_DOWN && y < FIELD_HEIGHT - 2) {
+                        erase_defender(x, y); y++; draw_defender(x, y);
+                        send_state_update(hSocket, my_entity_id, x, y);
+                    }
                 }
             }
-            else if (GetAsyncKeyState(VK_DOWN) & 0x8000) { // 아래쪽 화살표
-                if (y < FIELD_HEIGHT - 2) {
-                    erase_defender(x, y);
-                    y++;
-                    draw_defender(x, y);
-                    send_state_update(hSocket, my_entity_id, x, y);
-                }
-            }
-            // 총알 발사 구현 예정
             Sleep(50);
         }
     }
     else { // 공격자
         while (1) {
-            if (GetAsyncKeyState(VK_ESCAPE) & 0x8000) break; // ESC 키로 종료
+            // ESC 만 처리 (자동 이동은 계속)
+            if (PeekConsoleInput(hStdin, &rec, 1, &cnt) && cnt > 0) {
+                ReadConsoleInput(hStdin, &rec, 1, &cnt);
+                if (rec.EventType == KEY_EVENT && rec.Event.KeyEvent.bKeyDown &&
+                    rec.Event.KeyEvent.wVirtualKeyCode == VK_ESCAPE) {
+                    break;
+                }
+            }
             auto_move_attacker(hSocket, my_entity_id, &x, &y);
             Sleep(120);
         }
