@@ -100,8 +100,9 @@ void handle_action_event(SOCKET client_fd, PayloadActionEvent* payload) {
         LOG_INFO("Shooter has no ammo left.");
         return;
     }
-    shooter->ammo--;
 
+
+    shooter->ammo--;
     // 총알 생성
     Entity* bullet = create_entity(ENTITY_BULLET, shooter->owner_client_id, client_fd);
     if (!bullet) {

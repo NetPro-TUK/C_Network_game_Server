@@ -96,3 +96,17 @@ void send_action_event(SOCKET sock, uint32_t shooter_id, uint32_t bullet_id, int
     send(sock, (char*)&header, sizeof(MsgHeader), 0);
     send(sock, (char*)&payload, sizeof(PayloadActionEvent), 0);
 }
+
+void send_reload_request(SOCKET sock, uint32_t entity_id) {
+    MsgHeader header;
+    PayloadGameEvent payload;
+
+    header.type = MSG_GAME_EVENT;
+    header.length = htonl(sizeof(PayloadGameEvent));
+
+    payload.event_type = RELOAD_REQUEST;
+    payload.entityId = htonl(entity_id);
+
+    send(sock, (char*)&header, sizeof(header), 0);
+    send(sock, (char*)&payload, sizeof(payload), 0);
+}

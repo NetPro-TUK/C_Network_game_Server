@@ -96,12 +96,31 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                 role_status = ROLE_STATUS_REJECTED;
             }
             else if (p.event_type == OUT_OF_AMMO) {
-                gotoxy(43, FIELD_HEIGHT + 1);
-                printf("총알이 다 떨어졌습니다. 장전하시겠습니까? (R 키) ");
+                uint32_t id = ntohl(p.entityId);
+                for (int k = 0; k < MAX_ENTITIES; ++k) {
+                    if (view_entities[k].entity_id == id) {
+                        if (id == my_entity_id && view_entities[k].type == ENTITY_DEFENDER) {
+                            // 메시지를 화면 아래쪽에 출력
+                            gotoxy(0, FIELD_HEIGHT + 2);
+                            printf("총알이 다 떨어졌습니다. 장전하시겠습니까? (R 키) ");
+                        }
+                    }
+                }
+
             }
             else if (p.event_type == RELOAD_COMPLETE) {
-                gotoxy(43, FIELD_HEIGHT + 1);
-                printf("재장전이 완료되었습니다.");
+                uint32_t id = ntohl(p.entityId);
+                for (int k = 0; k < MAX_ENTITIES; ++k) {
+                    if (view_entities[k].entity_id == id) {
+                        if (id == my_entity_id && view_entities[k].type == ENTITY_DEFENDER) {
+                            redraw_full_screen();
+
+                            gotoxy(0, FIELD_HEIGHT + 2);
+                            printf("재장전이 완료되었습니다.");
+                        }
+                    }
+                }
+
             }
             else if (p.event_type == ENTITY_REMOVE) {
                 uint32_t id = ntohl(p.entityId);
@@ -290,6 +309,9 @@ int main(void) {
                     else if (vk == VK_SPACE) {
                         static uint32_t bullet_id_seq = 100000;
                         send_action_event(hSocket, my_entity_id, bullet_id_seq++, -1, 0);
+                    }
+                    else if (vk == 'R') {
+                        send_reload_request(hSocket, my_entity_id);
                     }
                 }
             }
