@@ -49,7 +49,7 @@ void handle_join(SOCKET client_fd, PayloadJoin* payload) {
     // ▶ 시작 위치 설정: 방어자 x=70, 공격자 x=1, y는 필드 중앙
         ent->y = SCREEN_HEIGHT / 2;  // game_logic.h: SCREEN_HEIGHT = 25
         if (type == ENTITY_DEFENDER) {
-            ent->x = 70;
+            ent->x = 75;
             defender_owner_id = newClientId;
 
         }
@@ -98,7 +98,6 @@ void handle_action_event(SOCKET client_fd, PayloadActionEvent* payload) {
         LOG_INFO("Shooter has no ammo left.");
         return;
     }
-
 
     shooter->ammo--;
     // 총알 생성

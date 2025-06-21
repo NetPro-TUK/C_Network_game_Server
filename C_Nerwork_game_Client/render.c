@@ -51,16 +51,19 @@ void show_cursor(void) {
     SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &ci);
 }
 
-// 플레이어 캐릭터를 (x, y) 위치에 출력하는 함수
+// 방어자 캐릭터를 (x, y) 위치에 출력하는 함수
 void draw_defender(int x, int y) {
     if (x < 0 || x >= FIELD_WIDTH || y < 0 || y >= FIELD_HEIGHT) return;
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     EnterCriticalSection(&g_console_cs);
+    SetConsoleTextAttribute(hConsole, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
     locked_gotoxy(x, y);            // 지정 좌표로 이동
     putchar(DEFENDER_CHAR);           // 플레이어 문자 출력 (기본값: 'A')
+    SetConsoleTextAttribute(hConsole, 7);
     LeaveCriticalSection(&g_console_cs);
 }
 
-// 플레이어 캐릭터를 지우는 함수 (공백으로 덮어쓰기)
+// 방어자 캐릭터를 지우는 함수 (공백으로 덮어쓰기)
 void erase_defender(int x, int y) {
     if (x < 0 || x >= FIELD_WIDTH || y < 0 || y >= FIELD_HEIGHT) return;
     EnterCriticalSection(&g_console_cs);
@@ -72,9 +75,12 @@ void erase_defender(int x, int y) {
 // 공격자 캐릭터를 (x, y) 위치에 출력하는 함수
 void draw_attacker(int x, int y) {
     if (x < 0 || x >= FIELD_WIDTH || y < 0 || y >= FIELD_HEIGHT) return;
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     EnterCriticalSection(&g_console_cs);
+    SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_INTENSITY);
     locked_gotoxy(x, y);
     putchar(ATTACKER_CHAR);
+    SetConsoleTextAttribute(hConsole, 7);
     LeaveCriticalSection(&g_console_cs);
 }
 

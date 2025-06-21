@@ -29,6 +29,8 @@ volatile int socket_disconnected = 0;
 static bool game_started = false;
 int role = 0;
 volatile int wants_respawn = 0;
+volatile uint32_t total_score = 0;  // 서버에서 받은 총 점수를 저장
+
 
 // 점수 측정을 위한 시작 시간
 uint64_t client_game_start_time = 0;
@@ -126,9 +128,9 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                 }
             }
             else if (p.event_type == SCORE_UPDATE) {
-                uint32_t score = ntohl(p.entityId);
+                total_score = ntohl(p.entityId);  // total_score 업데이트
                 gotoxy(FIELD_WIDTH - 24, FIELD_HEIGHT + 1);
-                printf("점수: %u ", score);
+                printf("점수: %u ", total_score);
             }
             else if (p.event_type == GAME_OVER) {
                 system("cls");
@@ -136,13 +138,12 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
 
                 uint64_t now = GetTickCount64();
                 uint32_t survival_time = (uint32_t)((now - client_game_start_time) / 1000);
-                uint32_t score = survival_time;  // 생존 시간이 점수가 되는 경우
 
                 gotoxy((FIELD_WIDTH - 24) / 2, FIELD_HEIGHT / 2);
                 printf("===> GAME OVER <===\n");
 
                 gotoxy((FIELD_WIDTH - 30) / 2, FIELD_HEIGHT / 2 + 2);
-                printf("총 점수: %u 점\n", score);
+                printf("총 점수: %u 점\n", total_score);  // 정확한 총 점수 출력 (공격자 잡은 횟수)
 
                 gotoxy((FIELD_WIDTH - 30) / 2, FIELD_HEIGHT / 2 + 3);
                 printf("생존 시간: %u 초\n", survival_time);
@@ -201,7 +202,6 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                 printf("리스폰 완료!\n");
             }
 
-        CONTINUE:
             // 생존 시간 출력 (매 1초 간격)
             uint64_t now = GetTickCount64();
             if (now - client_last_survival_display >= 1000) {
@@ -210,7 +210,7 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                 gotoxy(FIELD_WIDTH - 24, FIELD_HEIGHT + 2);
                 printf("생존 시간: %us   ", elapsed);
             }
-
+        CONTINUE:
             continue;
         }
         else {
@@ -285,7 +285,7 @@ int main(void) {
     draw_border();
     draw_status(role == 1 ? "방어자" : "공격자");
 
-    int x = (role == 1) ? 70 : 1;
+    int x = (role == 1) ? 75 : 1;
     int y = FIELD_HEIGHT / 2;
 
     HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
