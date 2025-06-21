@@ -82,7 +82,7 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
             else if (p.event_type == PLAYER_REJECTED) {
                 role_status = ROLE_STATUS_REJECTED;
             }
-            else if (p.event_type == MSG_ENTITY_REMOVE) {
+            else if (p.event_type == ENTITY_REMOVE) {
                 // 엔티티 ID 복원
                 uint32_t removeId = ntohl(p.entityId);
 

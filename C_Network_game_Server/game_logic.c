@@ -261,9 +261,9 @@ void check_collision() {
                     LOG_INFO("Bullet hit attacker → removed entities %u(attacker), %u(bullet)",
                         attacker->entity_id, bullet->entity_id);
 
-                    // 2) MSG_GAME_EVENT(MSG_ENTITY_REMOVE) 이벤트 페이로드 준비
+                    // 2) MSG_GAME_EVENT(ENTITY_REMOVE) 이벤트 페이로드 준비
                     PayloadGameEvent ev;
-                    ev.event_type = MSG_ENTITY_REMOVE;
+                    ev.event_type = ENTITY_REMOVE;
                     MsgHeader hdr = {
                         .length = htonl(sizeof(ev)),
                         .type = MSG_GAME_EVENT
