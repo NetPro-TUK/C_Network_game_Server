@@ -9,6 +9,7 @@
 #define SCREEN_HEIGHT 25
 
 extern uint32_t defender_owner_id;
+#define COLLISION_RADIUS 2  // 1이면 상하좌우 1칸까지 충돌 처리
 
 // 게임 시작 이벤트 처리 함수
 void handle_join(SOCKET client_fd, PayloadJoin* payload);

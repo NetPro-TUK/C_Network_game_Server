@@ -33,13 +33,13 @@ int role = 0;       // 내 역할 (0: 공격자, 1: 방어자)
 bool is_valid_position(int x, int y) {
     return x > 0 && x < FIELD_WIDTH - 1 && y > 0 && y < FIELD_HEIGHT - 1;
 }
-
+// 엔티티 그리기/지우기 함수들
 void draw_entity(EntityView* ent) {
     if (!is_valid_position(ent->x, ent->y)) return;
     if (ent->type == ENTITY_DEFENDER) draw_defender(ent->x, ent->y);
     else if (ent->type == ENTITY_ATTACKER) draw_attacker(ent->x, ent->y);
 }
-
+// 엔티티 지우기 함수들
 void erase_entity(EntityView* ent) {
     if (!is_valid_position(ent->x, ent->y)) return;
     if (ent->type == ENTITY_DEFENDER) erase_defender(ent->x, ent->y);
@@ -79,6 +79,20 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
             }
             else if (p.event_type == PLAYER_REJECTED) {
                 role_status = ROLE_STATUS_REJECTED;
+            }
+            else if (p.event_type == GAME_OVER) {
+                gotoxy(0, FIELD_HEIGHT + 2);
+                printf("\n===> 게임 오버! <===\n");
+                gotoxy(0, FIELD_HEIGHT + 3);
+                printf("종료하려면 'Q' 키를 누르세요...\n");
+                int ch;
+                do {
+                    ch = _getch();
+                    ch = toupper(ch);
+                } while (ch != 'Q');
+
+                socket_disconnected = 1;
+                break;
             }
         }
         // **게임 시작 신호를 받은 후에만 상태 업데이트 처리**
@@ -130,7 +144,6 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
 }
 
 int main(void) {
-    srand((unsigned int)time(NULL));
     SOCKET hSocket;
 
 	init_console_sync(); // 콘솔 동기화 초기화
@@ -210,10 +223,10 @@ int main(void) {
     INPUT_RECORD rec;
     DWORD        cnt;
 
-
     // 4) 플레이 루프
     if (role == 1) { // 방어자
         while (1) {
+            if (socket_disconnected) break;
             // 콘솔 입력 버퍼에서 이벤트가 쌓였으면 하나 가져오기
             if (PeekConsoleInput(hStdin, &rec, 1, &cnt) && cnt > 0) {
                 ReadConsoleInput(hStdin, &rec, 1, &cnt);
@@ -235,6 +248,7 @@ int main(void) {
     }
     else { // 공격자
         while (1) {
+            if (socket_disconnected) break;
             // ESC 만 처리 (자동 이동은 계속)
             if (PeekConsoleInput(hStdin, &rec, 1, &cnt) && cnt > 0) {
                 ReadConsoleInput(hStdin, &rec, 1, &cnt);

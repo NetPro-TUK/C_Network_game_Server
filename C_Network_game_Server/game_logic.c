@@ -69,7 +69,6 @@ void handle_join(SOCKET client_fd, PayloadJoin* payload) {
     send_full(client_fd, &ackPayload, sizeof(ackPayload));
 }
 
-
 // 총알 발사 이벤트를 처리하는 함수
 void handle_action_event(SOCKET client_fd, PayloadActionEvent* payload) {
     // 발사자 ID를 바탕으로 엔터티 검색
@@ -188,11 +187,10 @@ void send_state_update() {
             ent->type == ENTITY_DEFENDER ? "DEFENDER" :
             ent->type == ENTITY_BULLET ? "BULLET" :
             "UNKNOWN");
-
     }
 }
 
-// 충돌 체크 함수 (예: 총알과 플레이어 간의 충돌)
+// 충돌 체크 함수
 void check_collision() {
     for (int i = 0; i < entityCount; ++i) {
         Entity* a = &entityArr[i];
@@ -202,8 +200,11 @@ void check_collision() {
             Entity* b = &entityArr[j];
             if (!b->alive) continue;
 
+            int dx = abs(a->x - b->x);
+            int dy = abs(a->y - b->y);
+
             // 충돌 조건: 같은 위치에 있음
-            if (a->x == b->x && a->y == b->y) {
+            if (dx <= COLLISION_RADIUS && dy <= COLLISION_RADIUS) {
                 // 총알 vs 공격자
                 if ((a->type == ENTITY_BULLET && b->type == ENTITY_ATTACKER) ||
                     (a->type == ENTITY_ATTACKER && b->type == ENTITY_BULLET)) {
