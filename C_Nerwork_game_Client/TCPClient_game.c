@@ -90,7 +90,11 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                 }
                 game_started = true;
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 client_game_start_time = GetTickCount64();  // 점수용 타이머 시작
+=======
+                redraw_full_screen();  // 전체 화면 로딩
+>>>>>>> Stashed changes
 =======
                 redraw_full_screen();  // 전체 화면 로딩
 >>>>>>> Stashed changes
@@ -106,7 +110,13 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                         erase_entity(&view_entities[k]);
                         if (id == my_entity_id && view_entities[k].type == ENTITY_ATTACKER) {
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                             printf("💀 공격자가 사망했습니다. 리스폰 하시겠습니까? (S 키)\n");
+=======
+                            // 메시지를 화면 아래쪽에 출력
+                            gotoxy(0, FIELD_HEIGHT + 2);
+                            printf("공격자가 사망했습니다. 리스폰 하시겠습니까? (y 키) ");
+>>>>>>> Stashed changes
 =======
                             // 메시지를 화면 아래쪽에 출력
                             gotoxy(0, FIELD_HEIGHT + 2);
@@ -300,6 +310,9 @@ int main(void) {
             if (socket_disconnected) break;
     
             // 콘솔 키 이벤트 처리
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
             if (PeekConsoleInput(hStdin, &rec, 1, &cnt) && cnt > 0) {
                 ReadConsoleInput(hStdin, &rec, 1, &cnt);
@@ -307,6 +320,7 @@ int main(void) {
                 if (rec.EventType == KEY_EVENT && rec.Event.KeyEvent.bKeyDown) {
                     WORD vk = rec.Event.KeyEvent.wVirtualKeyCode;
                     if (vk == VK_ESCAPE) break;
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
                     else if (wants_respawn && vk == 'S') {
                         PayloadGameEvent ev = { .event_type = RESPAWN_REQUEST, .entityId = htonl(my_entity_id) };
@@ -316,6 +330,8 @@ int main(void) {
                         printf("🔁 리스폰 요청을 보냈습니다!\n");
                         wants_respawn = 0;
 =======
+=======
+>>>>>>> Stashed changes
 
                     // ▶ 리스폰 여부 판단
                     if (wants_respawn) {
@@ -337,6 +353,9 @@ int main(void) {
                             printf("게임에서 퇴장합니다.\n");
                             break;
                         }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
                     }
                 }
