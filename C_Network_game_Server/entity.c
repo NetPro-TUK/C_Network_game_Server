@@ -25,6 +25,12 @@ Entity* create_entity(EntityType type, uint32_t owner_id, SOCKET sock) {
     ent->vx = ent->vy = 0;
     ent->alive = 1;
     ent->sock = sock;
+
+    if (ent->type == ENTITY_DEFENDER) {
+        ent->ammo = 20;
+        ent->reloading = 0;
+        ent->reload_start_time_ms = 0;
+    }
     return ent;
 }
 

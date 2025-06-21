@@ -2,6 +2,7 @@
 #define GAME_LOGIC_H
 
 #include <winsock2.h>
+#include <time.h>
 #include "protocol.h"
 
 // 화면 경계 (콘솔 기준으로 자유롭게 조정)
@@ -16,6 +17,12 @@ void handle_join(SOCKET client_fd, PayloadJoin* payload);
 
 // 총알 발사 이벤트 처리 함수
 void handle_action_event(SOCKET client_fd, PayloadActionEvent* payload);
+
+// 현재 시간을 밀리초 단위로 반환하는 함수
+uint64_t current_time_ms();
+
+// 재장전 이벤트 처리 함수
+void handle_reload_request(SOCKET client_fd, uint32_t entity_id);
 
 // 게임 틱 처리 함수
 void game_tick();

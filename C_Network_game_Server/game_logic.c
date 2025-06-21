@@ -3,6 +3,7 @@
 #include "protocol.h"
 #include "log.h"
 #include "net_utils.h"
+#include <time.h>
 // 서버 헤더 파일
 #include "game_logic.h"
 #include "net_server.h"
@@ -68,6 +69,12 @@ void handle_join(SOCKET client_fd, PayloadJoin* payload) {
     send_full(client_fd, &header, sizeof(header));
     send_full(client_fd, &ackPayload, sizeof(ackPayload));
 }
+// 현재 시간을 밀리초 단위로 반환하는 함수
+uint64_t current_time_ms() {
+    struct timespec ts;
+    timespec_get(&ts, TIME_UTC);
+    return (uint64_t)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+}
 
 // 총알 발사 이벤트를 처리하는 함수
 void handle_action_event(SOCKET client_fd, PayloadActionEvent* payload) {
@@ -80,6 +87,15 @@ void handle_action_event(SOCKET client_fd, PayloadActionEvent* payload) {
         LOG_WARN("Shooter not found");
         return;
     }
+    if (shooter->reloading) {
+        LOG_INFO("Shooter is reloading.");
+        return;
+    }
+    if (shooter->ammo <= 0) {
+        LOG_INFO("Shooter has no ammo left.");
+        return;
+    }
+    shooter->ammo--;
 
     // 총알 생성
     Entity* bullet = create_entity(ENTITY_BULLET, shooter->owner_client_id, client_fd);
@@ -96,6 +112,16 @@ void handle_action_event(SOCKET client_fd, PayloadActionEvent* payload) {
     bullet->alive = 1;
 
     LOG_INFO("Bullet created");
+}
+
+void handle_reload_request(SOCKET client_fd, uint32_t entity_id) {
+    Entity* e = get_entity_by_id(entity_id);
+    if (!e || e->type != ENTITY_DEFENDER) return;
+    if (e->ammo == 20 || e->reloading) return;
+
+    e->reloading = 1;
+    e->reload_start_time_ms = current_time_ms();  // 타이머 시작
+    LOG_INFO("Reload started by entity %u", entity_id);
 }
 
 // 랜덤으로 공격자들을 이동시키는 함수
@@ -127,6 +153,19 @@ void game_tick() {
     if (!seeded) {
         srand((unsigned)time(NULL));
         seeded = 1;
+    }
+
+    // (추가 기능) 방어자 재장전 상태 갱신
+    for (int i = 0; i < entityCount; ++i) {
+        Entity* e = &entityArr[i];
+        if (e->alive && e->type == ENTITY_DEFENDER && e->reloading) {
+            uint64_t now = current_time_ms();
+            if (now - e->reload_start_time_ms >= 3000) {
+                e->ammo = 20;
+                e->reloading = 0;
+                LOG_INFO("Reload complete for entity %u", e->entity_id);
+            }
+        }
     }
 
     // 1) 게임이 시작된 후에만 엔터티 이동 & 충돌 처리
