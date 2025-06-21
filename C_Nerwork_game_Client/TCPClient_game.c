@@ -89,8 +89,8 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                     view_entities[i].active = 0;
                 }
                 game_started = true;
-                client_game_start_time = GetTickCount64(); // 점수용 타이머 시작 (Updated upstream)
-                redraw_full_screen(); // 전체 화면 로딩 (Stashed changes) - 두 기능 모두 필요할 수 있습니다.
+                client_game_start_time = GetTickCount64(); // 점수용 타이머 시작
+                redraw_full_screen(); // 전체 화면 로딩
             }
             else if (p.event_type == PLAYER_REJECTED) {
                 role_status = ROLE_STATUS_REJECTED;
@@ -112,7 +112,7 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                         if (id == my_entity_id && view_entities[k].type == ENTITY_ATTACKER) {
                             // 메시지를 화면 아래쪽에 출력
                             gotoxy(0, FIELD_HEIGHT + 2);
-                            printf("공격자가 사망했습니다. 리스폰 하시겠습니까? (Y 키) ");
+                            printf("리스폰하려면 (Y 키)를 누르세요. (Q 키)로 게임 종료. ");
                             wants_respawn = 1;
                         }
                         break;
@@ -297,8 +297,8 @@ int main(void) {
         }
     }
     else { // 공격자
-        while (1) { // Stashed changes의 while(1) 루프
-            if (socket_disconnected) break; // Stashed changes의 연결 끊김 처리
+        while (1) {
+            if (socket_disconnected) break;
 
             // 콘솔 키 이벤트 처리
             if (PeekConsoleInput(hStdin, &rec, 1, &cnt) && cnt > 0) {
@@ -308,9 +308,9 @@ int main(void) {
                     WORD vk = rec.Event.KeyEvent.wVirtualKeyCode;
                     if (vk == VK_ESCAPE) break;
 
-                    // ▶ 리스폰 여부 판단 (Stashed changes)
+                    // 리스폰 여부 판단
                     if (wants_respawn) {
-                        if (vk == 0x59) { // y 키 입력 시 (Stashed changes)
+                        if (vk == 0x59) {
                             // 리스폰 요청
                             MsgHeader hdr = {
                                 .type = MSG_GAME_EVENT,
@@ -320,16 +320,13 @@ int main(void) {
                                 .event_type = RESPAWN_REQUEST,
                                 .entityId = htonl(my_entity_id)
                             };
-                            if (vk == 0x59) { // y 키 입력
-                                send(hSocket, (char*)&hdr, sizeof(hdr), 0);
-                                send(hSocket, (char*)&ev, sizeof(ev), 0);
-                                gotoxy(2, FIELD_HEIGHT - 3);
-                            }
+                            send(hSocket, (char*)&hdr, sizeof(hdr), 0);
+                            send(hSocket, (char*)&ev, sizeof(ev), 0);
                         }
-                        else {
-                            printf("게임에서 퇴장합니다.\n");
-                            break;
-                        }
+						else if (vk == 0x51) { // Q 키
+							printf("게임에서 퇴장합니다.\n");
+							break;
+						}
                     }
                 }
             }
