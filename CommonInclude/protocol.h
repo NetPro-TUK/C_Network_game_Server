@@ -21,8 +21,9 @@ typedef enum {
     GAME_START = 4,          // 서버 → 클라이언트: 게임 시작 신호
     ENTITY_REMOVE = 5,
     RESPAWN_REQUEST = 6,     //리스폰 요청 타입 추가
-    RELOAD_COMPLETE = 7,      // 서버 → 클라: 재장전 완료 알림
-    SCORE_UPDATE = 8    // ✅ 점수 전송을 위한 게임 이벤트 타입 추가
+    OUT_OF_AMMO = 7,         // 총알 부족 알림 (방어자 전용)
+    RELOAD_COMPLETE = 8,     // 서버 → 클라: 재장전 완료 알림
+    SCORE_UPDATE = 9         // 점수 전송을 위한 게임 이벤트 타입 추가
 } GameEventType;
 
 // 게임 이벤트 페이로드 구조체

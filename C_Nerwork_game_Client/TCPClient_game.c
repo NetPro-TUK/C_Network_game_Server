@@ -95,6 +95,14 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
             else if (p.event_type == PLAYER_REJECTED) {
                 role_status = ROLE_STATUS_REJECTED;
             }
+            else if (p.event_type == OUT_OF_AMMO) {
+                gotoxy(43, FIELD_HEIGHT + 1);
+                printf("총알이 다 떨어졌습니다. 장전하시겠습니까? (R 키) ");
+            }
+            else if (p.event_type == RELOAD_COMPLETE) {
+                gotoxy(43, FIELD_HEIGHT + 1);
+                printf("재장전이 완료되었습니다.");
+            }
             else if (p.event_type == ENTITY_REMOVE) {
                 uint32_t id = ntohl(p.entityId);
                 for (int k = 0; k < MAX_ENTITIES; ++k) {
@@ -102,14 +110,19 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                         view_entities[k].active = 0;
                         erase_entity(&view_entities[k]);
                         if (id == my_entity_id && view_entities[k].type == ENTITY_ATTACKER) {
-                            // 메시지를 화면 아래쪽에 출력 (Stashed changes)
+                            // 메시지를 화면 아래쪽에 출력
                             gotoxy(0, FIELD_HEIGHT + 2);
-                            printf("공격자가 사망했습니다. 리스폰 하시겠습니까? (y 키) "); // Stashed changes
+                            printf("공격자가 사망했습니다. 리스폰 하시겠습니까? (Y 키) ");
                             wants_respawn = 1;
                         }
                         break;
                     }
                 }
+            }
+            else if (p.event_type == SCORE_UPDATE) {
+                uint32_t score = ntohl(p.entityId);
+                gotoxy(FIELD_WIDTH - 18, FIELD_HEIGHT + 1);  // 오른쪽 하단 등 원하는 위치
+                printf("점수: %u    ", score);
             }
             else if (p.event_type == GAME_OVER) {
                 system("cls");
