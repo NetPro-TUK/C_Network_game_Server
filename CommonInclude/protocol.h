@@ -16,7 +16,7 @@ typedef enum {
 // 게임 이벤트 타입 정의
 typedef enum {
     GAME_OVER = 1,
-    GAME_WIN = 2,
+    // GAME_WIN = 2, 미사용 이벤트
     PLAYER_REJECTED = 3,
     GAME_START = 4,          // 서버 → 클라이언트: 게임 시작 신호
     ENTITY_REMOVE = 5,

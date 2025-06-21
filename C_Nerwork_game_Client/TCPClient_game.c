@@ -11,7 +11,7 @@
 #include "render.h"
 #include "entity.h"
 
-#define MAX_ENTITIES 256
+#define MAX_ENTITIES 512
 
 typedef struct {
     uint32_t entity_id;
@@ -139,16 +139,16 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                 uint64_t now = GetTickCount64();
                 uint32_t survival_time = (uint32_t)((now - client_game_start_time) / 1000);
 
-                gotoxy((FIELD_WIDTH - 24) / 2, FIELD_HEIGHT / 2);
+                gotoxy((FIELD_WIDTH - 20) / 2, FIELD_HEIGHT / 2 - 2);
                 printf("===> GAME OVER <===\n");
 
-                gotoxy((FIELD_WIDTH - 30) / 2, FIELD_HEIGHT / 2 + 2);
+                gotoxy((FIELD_WIDTH - 22) / 2, FIELD_HEIGHT / 2);
                 printf("총 점수: %u 점\n", total_score);  // 정확한 총 점수 출력 (공격자 잡은 횟수)
 
-                gotoxy((FIELD_WIDTH - 30) / 2, FIELD_HEIGHT / 2 + 3);
+                gotoxy((FIELD_WIDTH - 22) / 2, FIELD_HEIGHT / 2 + 1);
                 printf("생존 시간: %u 초\n", survival_time);
 
-                gotoxy((FIELD_WIDTH - 30) / 2, FIELD_HEIGHT / 2 + 5);
+                gotoxy((FIELD_WIDTH - 22) / 2, FIELD_HEIGHT / 2 + 3);
                 printf("Press 'Q' to quit...\n");
 
                 int ch;
