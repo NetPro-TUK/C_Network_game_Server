@@ -23,6 +23,9 @@ int numOfClnt = 0;
 static uint32_t client_id = 1;
 uint32_t current_score = 0;
 
+static int	attacker_ready_count = 0; // 공격자 최소 3명 이상 확인
+
+
 // 서버 소켓 초기화 및 리슨 설정
 int init_server_socket(int port) {
     WSADATA wsaData;
@@ -148,11 +151,12 @@ int recv_and_dispatch(int i) {
         }
         else if (e->type == ENTITY_ATTACKER) {
             attacker_ready = true;
+            attacker_ready_count++;
             printf("Server> ATTACKER ready\n");
         }
 
-        // 둘 다 준비됐을 때만 게임 시작
-        if (defender_ready && attacker_ready) {
+        // 둘 다 준비됐을 때만 게임 시작 (공격자 3명 이상, 방어자 하나)
+        if (defender_ready && attacker_ready_count >= 3) {
             // GAME_START 이벤트 브로드캐스트
             MsgHeader h = { .type = MSG_GAME_EVENT, .length = htonl(sizeof(PayloadGameEvent)) };
             PayloadGameEvent ev = { .event_type = GAME_START };
@@ -181,7 +185,8 @@ int recv_and_dispatch(int i) {
                 broadcast_all(&upd, sizeof(upd));
             }
         }
-
+        if (defender_ready && attacker_ready_count >= 3) {
+        }
         return 0;
     }
     // 4. 슈팅 이벤트 메시지 처리
