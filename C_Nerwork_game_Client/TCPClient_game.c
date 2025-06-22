@@ -70,7 +70,7 @@ void update_survival_display_if_needed() {
 void redraw_full_screen() {
     system("cls");
     draw_border();
-    draw_status(role == 1 ? "방어자" : "공격자");
+    draw_role(role == 1 ? "방어자" : "공격자");
     for (int i = 0; i < MAX_ENTITIES; ++i)
         if (view_entities[i].active) draw_entity(&view_entities[i]);
     draw_label_value("점수", total_score, FIELD_WIDTH - 20, FIELD_HEIGHT + 1);
@@ -254,7 +254,7 @@ int main(void) {
     hide_cursor();
     system("cls");
     draw_border();
-    draw_status(role == 1 ? "방어자" : "공격자");
+    draw_role(role == 1 ? "방어자" : "공격자");
 
     int x = (role == 1) ? 75 : 1;
     int y = FIELD_HEIGHT / 2;

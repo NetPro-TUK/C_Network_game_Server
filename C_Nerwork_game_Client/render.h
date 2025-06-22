@@ -15,7 +15,7 @@ void init_console_sync(void);
 void cleanup_console_sync(void);
 
 // 상태 메시지 그리기 (동기화 포함)
-void draw_status(const char* role_name);
+void draw_role(const char* role_name);
 void draw_label_value(const char* label, uint32_t value, int x, int y);
 
 // 콘솔 커서 위치 이동 및 가시성 제어
