@@ -16,7 +16,7 @@ typedef enum {
 // 게임 이벤트 세부 타입 정의 (PayloadGameEvent.event_type 필드)
 typedef enum {
     GAME_OVER       = 1,  // 서버→클라이언트: 게임 오버 알림
-    GAME_WIN        = 2;  // 사용되지 않음 
+    GAME_WIN        = 2,  // 사용되지 않음 
     PLAYER_REJECTED = 3,  // 서버→클라이언트: 방어자 중복 요청 거부
     GAME_START      = 4,  // 서버→클라이언트: 게임 시작 알림
     ENTITY_REMOVE   = 5,  // 서버→클라이언트: 특정 엔티티(총알/플레이어) 제거
