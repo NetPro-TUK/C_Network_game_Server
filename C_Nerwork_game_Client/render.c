@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <stdio.h>
+#include <stdint.h>
 #include "render.h"
 
 // 동기화
@@ -27,6 +28,14 @@ void draw_status(const char* role_name) {
     printf("%s 조작 중. ESC 키로 종료합니다.", role_name);
     LeaveCriticalSection(&g_console_cs);
 }
+
+void draw_label_value(const char* label, uint32_t value, int x, int y) {
+    EnterCriticalSection(&g_console_cs);
+    locked_gotoxy(x, y);
+    printf("%s: %u   ", label, value);  // 여백으로 덮기까지 포함
+    LeaveCriticalSection(&g_console_cs);
+}
+
 
 // 콘솔 커서를 지정 좌표 (x, y)로 이동시키는 함수
 void gotoxy(int x, int y) {

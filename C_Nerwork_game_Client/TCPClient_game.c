@@ -36,6 +36,7 @@ volatile uint32_t total_score = 0;  // 서버에서 받은 총 점수를 저장
 uint64_t client_game_start_time = 0;
 uint64_t client_last_survival_display = 0;
 
+
 bool is_valid_position(int x, int y) {
     return x > 0 && x < FIELD_WIDTH - 1 && y > 0 && y < FIELD_HEIGHT - 1;
 }
@@ -58,12 +59,19 @@ void redraw_full_screen() {
     system("cls");
     draw_border();
     draw_status(role == 1 ? "방어자" : "공격자");
+
     for (int i = 0; i < MAX_ENTITIES; ++i) {
         if (view_entities[i].active) {
             draw_entity(&view_entities[i]);
         }
     }
+    draw_label_value("점수", total_score, FIELD_WIDTH - 20, FIELD_HEIGHT + 1);
+
+    uint64_t now = GetTickCount64();
+    uint32_t elapsed = (uint32_t)((now - client_game_start_time) / 1000);
+    draw_label_value("생존 시간", elapsed, FIELD_WIDTH - 20, FIELD_HEIGHT + 2);
 }
+
 
 DWORD WINAPI recv_server_thread(LPVOID arg) {
     SOCKET sock = *(SOCKET*)arg;
@@ -129,8 +137,7 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
             }
             else if (p.event_type == SCORE_UPDATE) {
                 total_score = ntohl(p.entityId);  // total_score 업데이트
-                gotoxy(FIELD_WIDTH - 24, FIELD_HEIGHT + 1);
-                printf("점수: %u ", total_score);
+                draw_label_value("점수", total_score, FIELD_WIDTH - 20, FIELD_HEIGHT + 1);
             }
             else if (p.event_type == GAME_OVER) {
                 system("cls");
@@ -162,6 +169,14 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
             }
         }
         else if (game_started && header.type == MSG_STATE_UPDATE && len == sizeof(PayloadStateUpdate)) {
+            // 생존 시간, 점수 출력 (매 1초 간격)
+            uint64_t now = GetTickCount64();
+            if (now - client_last_survival_display >= 1000) {
+                client_last_survival_display = now;
+                uint32_t elapsed = (uint32_t)((now - client_game_start_time) / 1000);
+                draw_label_value("생존 시간", elapsed, FIELD_WIDTH - 20, FIELD_HEIGHT + 2);
+            }
+
             PayloadStateUpdate payload;
             recv_full(sock, &payload, sizeof(payload));
 
@@ -200,15 +215,6 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
                 redraw_full_screen();
                 gotoxy(0, FIELD_HEIGHT + 2);
                 printf("리스폰 완료!\n");
-            }
-
-            // 생존 시간 출력 (매 1초 간격)
-            uint64_t now = GetTickCount64();
-            if (now - client_last_survival_display >= 1000) {
-                client_last_survival_display = now;
-                uint32_t elapsed = (uint32_t)((now - client_game_start_time) / 1000);
-                gotoxy(FIELD_WIDTH - 24, FIELD_HEIGHT + 2);
-                printf("생존 시간: %us   ", elapsed);
             }
         CONTINUE:
             continue;
@@ -294,6 +300,7 @@ int main(void) {
 
     if (role == 1) {
         while (!socket_disconnected) {
+
             if (PeekConsoleInput(hStdin, &rec, 1, &cnt) && cnt > 0) {
                 ReadConsoleInput(hStdin, &rec, 1, &cnt);
                 if (rec.EventType == KEY_EVENT && rec.Event.KeyEvent.bKeyDown) {
