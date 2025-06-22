@@ -18,7 +18,6 @@ bool server_game_over = false;
 
 SOCKET sockArr[MAX_CLIENT];         
 WSAEVENT eventArr[MAX_CLIENT];     
-bool    client_ready[MAX_CLIENT];  
 int numOfClnt = 0;                 
 static uint32_t client_id = 1;
 uint32_t current_score = 0;
@@ -79,9 +78,6 @@ void accept_new_client(SOCKET serverSock) {
     sockArr[numOfClnt] = hClntSock;
     eventArr[numOfClnt] = WSACreateEvent();
     WSAEventSelect(hClntSock, eventArr[numOfClnt], FD_READ | FD_CLOSE);
-
-    // 클라이언트 READY 플래그 초기화
-    client_ready[numOfClnt] = false;
 
     printf("Server> client connected: %s:%d\n", inet_ntoa(clntAdr.sin_addr), ntohs(clntAdr.sin_port));
     numOfClnt++;
@@ -273,7 +269,6 @@ void remove_client_at(int index) {
     // 마지막 요소로 덮어쓰기
     sockArr[index] = sockArr[numOfClnt - 1];
     eventArr[index] = eventArr[numOfClnt - 1];
-    client_ready[index] = client_ready[numOfClnt - 1];
     numOfClnt--;
 }
 
