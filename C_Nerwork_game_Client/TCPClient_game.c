@@ -195,7 +195,7 @@ DWORD WINAPI recv_server_thread(LPVOID arg) {
 
 int main(void) {
     SOCKET hSocket;
-    init_console_sync();
+    init_console_sync(); // 콘솔 동기화 초기화
 
     while (1) {
         printf("역할을 선택하세요: [1] 방어자 (DEFENDER), [2] 공격자 (ATTACKER): ");
@@ -306,7 +306,7 @@ int main(void) {
     }
 
     show_cursor();
-    cleanup_console_sync();
+    cleanup_console_sync(); // 콘솔 동기화 정리
     closesocket(hSocket);
     WSACleanup();
     system("cls");
