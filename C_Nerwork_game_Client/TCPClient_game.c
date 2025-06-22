@@ -217,12 +217,18 @@ int main(void) {
 
         if (role_status == ROLE_STATUS_REJECTED) {
             printf("[알림] 방어자가 이미 존재합니다.\n");
-            closesocket(hSocket); WSACleanup(); continue;
+            closesocket(hSocket);
+            WSACleanup();
+            continue;
         }
+
         if (socket_disconnected) {
             printf("서버와 연결이 끊겼습니다.\n");
-            closesocket(hSocket); WSACleanup(); continue;
+            closesocket(hSocket);
+            WSACleanup();
+            continue;
         }
+
         break;
     }
 
@@ -236,6 +242,7 @@ int main(void) {
     while (_kbhit()) _getch();
     send_ready(hSocket, my_entity_id);
     printf("상대 플레이어 준비 중… 잠시만 기다려 주세요.\n");
+
     while (!game_started) {
         if (socket_disconnected) {
             puts("서버 연결이 끊어졌습니다.");
@@ -256,45 +263,46 @@ int main(void) {
     INPUT_RECORD rec;
     DWORD cnt;
 
-    if (role == 1) {
-        while (!socket_disconnected) {
-            if (PeekConsoleInput(hStdin, &rec, 1, &cnt) && cnt > 0) {
-                ReadConsoleInput(hStdin, &rec, 1, &cnt);
-                if (rec.EventType == KEY_EVENT && rec.Event.KeyEvent.bKeyDown) {
-                    WORD vk = rec.Event.KeyEvent.wVirtualKeyCode;
-                    if (vk == VK_ESCAPE) break;
-                    else if (vk == VK_UP && y > 1) { erase_defender(x, y); y--; draw_defender(x, y); send_state_update(hSocket, my_entity_id, x, y); }
-                    else if (vk == VK_DOWN && y < FIELD_HEIGHT - 2) { erase_defender(x, y); y++; draw_defender(x, y); send_state_update(hSocket, my_entity_id, x, y); }
-                    else if (vk == VK_SPACE) {
-                        static uint32_t bullet_id_seq = 100000;
-                        send_shooting_event(hSocket, my_entity_id, bullet_id_seq++, -1, 0);
-                    }
-                    else if (vk == 'R') send_reload_request(hSocket, my_entity_id);
+    while (!socket_disconnected) {
+        if (PeekConsoleInput(hStdin, &rec, 1, &cnt) && cnt > 0) {
+            ReadConsoleInput(hStdin, &rec, 1, &cnt);
+
+            if (rec.EventType != KEY_EVENT || !rec.Event.KeyEvent.bKeyDown) continue;
+
+            WORD vk = rec.Event.KeyEvent.wVirtualKeyCode;
+            if (vk == VK_ESCAPE) break;
+
+            if (role == 1) {
+                if (vk == VK_UP && y > 1) {
+                    erase_defender(x, y);
+                    y--;
+                    draw_defender(x, y);
+                    send_state_update(hSocket, my_entity_id, x, y);
+                }
+                else if (vk == VK_DOWN && y < FIELD_HEIGHT - 2) {
+                    erase_defender(x, y);
+                    y++;
+                    draw_defender(x, y);
+                    send_state_update(hSocket, my_entity_id, x, y);
+                }
+                else if (vk == VK_SPACE) {
+                    static uint32_t bullet_id_seq = 100000;
+                    send_shooting_event(hSocket, my_entity_id, bullet_id_seq++, -1, 0);
+                }
+                else if (vk == 'R') {
+                    send_reload_request(hSocket, my_entity_id);
                 }
             }
-            Sleep(50);
-        }
-    }
-    else {
-        while (!socket_disconnected) {
-            if (PeekConsoleInput(hStdin, &rec, 1, &cnt) && cnt > 0) {
-                ReadConsoleInput(hStdin, &rec, 1, &cnt);
-                if (rec.EventType == KEY_EVENT && rec.Event.KeyEvent.bKeyDown) {
-                    WORD vk = rec.Event.KeyEvent.wVirtualKeyCode;
-                    if (vk == VK_ESCAPE) break;
-                    if (wants_respawn) {
-                        if (vk == 0x59) { // Y
-                            MsgHeader hdr = { .type = MSG_GAME_EVENT, .length = htonl(sizeof(PayloadGameEvent)) };
-                            PayloadGameEvent ev = { .event_type = RESPAWN_REQUEST, .entityId = htonl(my_entity_id) };
-                            send(hSocket, (char*)&hdr, sizeof(hdr), 0);
-                            send(hSocket, (char*)&ev, sizeof(ev), 0);
-                        }
-                        else if (vk == 0x51) break; // Q
-                    }
+            else {
+                if (!wants_respawn) continue; // 공격자가 죽었을 때만 (Y/Q) 입력 처리
+
+                if (vk == 0x59) { // Y
+                    send_respawn_request(hSocket, my_entity_id);
                 }
+                else if (vk == 0x51) break; // Q
             }
-            Sleep(120);
         }
+        Sleep(role == 1 ? 50 : 120);
     }
 
     show_cursor();
@@ -305,4 +313,5 @@ int main(void) {
     printf("\nClient> 종료되었습니다.\n");
     return 0;
 }
+
 
