@@ -8,7 +8,7 @@
 #include "game_logic.h"
 #include "net_server.h"
 
-uint32_t defender_owner_id = 0;
+uint32_t defender_owner_id = 0; // 방어자 엔티티 소유자 ID (최대 1명으로 관리하기 위한 전역 변수)
 uint32_t current_score;
 
 // game_logi.c 에서만 사용

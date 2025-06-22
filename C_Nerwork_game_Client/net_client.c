@@ -43,16 +43,22 @@ SOCKET connect_to_server(const char* ip, int port) {
 
 // 클라이언트 역할을 서버에 전송하고, 서버가 부여한 entity ID를 수신
 void send_join_and_get_id(SOCKET sock, int role) {
-    PayloadJoin joinPayload = { .role = role };
-    MsgHeader joinHeader = {
-        .type = MSG_JOIN,
-        .length = htonl(sizeof(joinPayload))
-    };
+    MsgHeader joinHeader;
+    PayloadJoin joinPayload;
+
+    // 헤더 구성
+    joinHeader.type = MSG_JOIN;
+    joinHeader.length = htonl(sizeof(PayloadJoin));
+
+    // 페이로드 구성
+    joinPayload.role = role;
+
+    // 전송
     send_full(sock, &joinHeader, sizeof(joinHeader));
     send_full(sock, &joinPayload, sizeof(joinPayload));
 }
 
-// 게임 준비
+// 게임 준비 신호 전송
 void send_ready(SOCKET sock, uint32_t my_entity_id) {
     MsgHeader h = {
         .type = MSG_READY,
@@ -61,66 +67,77 @@ void send_ready(SOCKET sock, uint32_t my_entity_id) {
     send_full(sock, &h, sizeof(h));
 }
 
+// 엔티티 상태 업데이트 전송
 void send_state_update(SOCKET sock, uint32_t id, int x, int y) {
-    // 상태 정보 페이로드 생성
-    PayloadStateUpdate statePayload = {
-        .entityId = htonl(id),  // 서버와 통신 시 ID는 네트워크 바이트 순서로
-        .x = x,
-        .y = y
-    };
-    // 헤더 생성
-    MsgHeader stateHeader = {
-        .type = MSG_STATE_UPDATE,
-        .length = htonl(sizeof(statePayload))
-    };
-    // 전송 (헤더 → 페이로드 순서)
+    MsgHeader stateHeader;
+    PayloadStateUpdate statePayload;
+
+    // 헤더 구성
+    stateHeader.type = MSG_STATE_UPDATE;
+    stateHeader.length = htonl(sizeof(PayloadStateUpdate));
+
+    // 페이로드 구성
+    statePayload.entityId = htonl(id);
+    statePayload.x = x;
+    statePayload.y = y;
+
+    // 전송
     send_full(sock, &stateHeader, sizeof(stateHeader));
     send_full(sock, &statePayload, sizeof(statePayload));
 }
 
+// 총알 발사 이벤트 전송
 void send_shooting_event(SOCKET sock, uint32_t shooter_id, uint32_t bullet_id, int dirX, int dirY) {
-    MsgHeader header;
-    PayloadShootingEvent payload;
+    MsgHeader shootingHeader;
+    PayloadShootingEvent shootingPayload;
 
     // 헤더 구성
-    header.length = htonl(sizeof(PayloadShootingEvent));  // 네트워크 바이트 순서로 변환
-    header.type = MSG_SHOOTING_EVENT;                   // enum 값 그대로 전송
+    shootingHeader.type = MSG_SHOOTING_EVENT;
+    shootingHeader.length = htonl(sizeof(PayloadShootingEvent));
 
     // 페이로드 구성
-    payload.shooterId = htonl(shooter_id);
-    payload.bulletId = htonl(bullet_id);
-    payload.dirX = dirX;
-    payload.dirY = dirY;
+    shootingPayload.shooterId = htonl(shooter_id);
+    shootingPayload.bulletId = htonl(bullet_id);
+    shootingPayload.dirX = dirX;
+    shootingPayload.dirY = dirY;
 
     // 전송
-    send(sock, (char*)&header, sizeof(MsgHeader), 0);
-    send(sock, (char*)&payload, sizeof(PayloadShootingEvent), 0);
+    send_full(sock, &shootingHeader, sizeof(shootingHeader));
+    send_full(sock, &shootingPayload, sizeof(shootingPayload));
 }
 
+// 재장전 요청 전송
 void send_reload_request(SOCKET sock, uint32_t entity_id) {
-    MsgHeader header;
-    PayloadGameEvent payload;
+    MsgHeader reloadHeader;
+    PayloadGameEvent reloadPayload;
 
-    header.type = MSG_GAME_EVENT;
-    header.length = htonl(sizeof(PayloadGameEvent));
+    // 헤더 구성
+    reloadHeader.type = MSG_GAME_EVENT;
+    reloadHeader.length = htonl(sizeof(PayloadGameEvent));
 
-    payload.event_type = RELOAD_REQUEST;
-    payload.entityId = htonl(entity_id);
+    // 페이로드 구성
+    reloadPayload.event_type = RELOAD_REQUEST;
+    reloadPayload.entityId = htonl(entity_id);
 
-    send(sock, (char*)&header, sizeof(header), 0);
-    send(sock, (char*)&payload, sizeof(payload), 0);
+    // 전송
+    send_full(sock, &reloadHeader, sizeof(reloadHeader));
+    send_full(sock, &reloadPayload, sizeof(reloadPayload));
 }
 
+// 리스폰 요청 전송
 void send_respawn_request(SOCKET sock, uint32_t entity_id) {
-    MsgHeader header;
-    PayloadGameEvent payload;
+    MsgHeader respawnHeader;
+    PayloadGameEvent respawnPayload;
 
-    header.type = MSG_GAME_EVENT;
-    header.length = htonl(sizeof(PayloadGameEvent));
+    // 헤더 구성
+    respawnHeader.type = MSG_GAME_EVENT;
+    respawnHeader.length = htonl(sizeof(PayloadGameEvent));
 
-    payload.event_type = RESPAWN_REQUEST;
-    payload.entityId = htonl(entity_id);
+    // 페이로드 구성
+    respawnPayload.event_type = RESPAWN_REQUEST;
+    respawnPayload.entityId = htonl(entity_id);
 
-    send(sock, (char*)&header, sizeof(header), 0);
-    send(sock, (char*)&payload, sizeof(payload), 0);
+    // 전송
+    send_full(sock, &respawnHeader, sizeof(respawnHeader));
+    send_full(sock, &respawnPayload, sizeof(respawnPayload));
 }
