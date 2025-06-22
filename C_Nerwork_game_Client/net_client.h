@@ -37,4 +37,7 @@ void send_shooting_event(SOCKET sock, uint32_t shooter_id, uint32_t bullet_id, i
 // 클라이언트가 재장전 요청을 서버로 전송
 void send_reload_request(SOCKET sock, uint32_t entity_id);
 
+// 클라이언트가 리스폰 요청을 서버로 전송
+void send_respawn_request(SOCKET sock, uint32_t entity_id);
+
 #endif

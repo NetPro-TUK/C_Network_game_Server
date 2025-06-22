@@ -297,10 +297,7 @@ int main(void) {
                 if (!wants_respawn) continue; // 공격자가 죽었을 때만 (Y/Q) 입력 처리
 
                 if (vk == 0x59) { // Y
-                    MsgHeader hdr = { .type = MSG_GAME_EVENT, .length = htonl(sizeof(PayloadGameEvent)) };
-                    PayloadGameEvent ev = { .event_type = RESPAWN_REQUEST, .entityId = htonl(my_entity_id) };
-                    send(hSocket, (char*)&hdr, sizeof(hdr), 0);
-                    send(hSocket, (char*)&ev, sizeof(ev), 0);
+                    send_respawn_request(hSocket, my_entity_id);
                 }
                 else if (vk == 0x51) break; // Q
             }
