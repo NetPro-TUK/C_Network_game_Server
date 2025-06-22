@@ -212,7 +212,7 @@ int main(void) {
         socket_disconnected = 0;
         CreateThread(NULL, 0, recv_server_thread, &hSocket, 0, NULL);
 
-        send_join_and_get_id(hSocket, role);
+        send_join(hSocket, role);
         while (role_status == ROLE_STATUS_PENDING && !socket_disconnected) Sleep(10);
 
         if (role_status == ROLE_STATUS_REJECTED) {

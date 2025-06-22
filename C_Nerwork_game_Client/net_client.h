@@ -17,7 +17,7 @@ SOCKET connect_to_server(const char* ip, int port);
 
 // 클라이언트의 역할(DEFENDER or ATTACKER)을 서버에 전송하고,
 // 서버가 부여한 고유 entity ID를 받음
-void send_join_and_get_id(SOCKET sock, int role);
+void send_join(SOCKET sock, int role);
 
 // 준비 완료 신호를 서버로 전송
 void send_ready(SOCKET sock, uint32_t my_entity_id);
