@@ -1,14 +1,11 @@
 ﻿#include <time.h>
-#include <stdint.h>  // 추가 필요
+#include <stdint.h>  
 #include "entity.h"
 #include "net_server.h"
 #include "game_logic.h"
 
 #define TICK_INTERVAL_MS 50   // 게임 틱 간격: 20 FPS 기준 (50ms 간격)
 #define AUTO_MOVE_MS     120  // 공격자 자동 이동 간격
-
-// 점수 관련 변수 
-static uint32_t current_score = 0;
 
 int main() {
     SOCKET serverSock = init_server_socket(9000);

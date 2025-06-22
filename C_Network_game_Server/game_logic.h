@@ -8,9 +8,8 @@
 // 화면 경계 (콘솔 기준으로 자유롭게 조정)
 #define SCREEN_WIDTH 80
 #define SCREEN_HEIGHT 25
-
-extern uint32_t defender_owner_id;
-#define COLLISION_RADIUS 1  // 1이면 상하좌우 1칸까지 충돌 처리
+// 충돌범위 (상하좌우)
+#define COLLISION_RADIUS 1 
 
 // 게임 시작 이벤트 처리 함수
 void handle_join(SOCKET client_fd, PayloadJoin* payload);

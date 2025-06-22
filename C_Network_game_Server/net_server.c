@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <string.h>
 // 공용 헤더 파일
@@ -10,58 +11,49 @@
 #include "game_logic.h"
 
 
-bool defender_ready = false;
-bool attacker_ready = false;
-bool game_started = false;
+bool defender_ready = false;   
+bool attacker_ready = false;   
+bool game_started = false;      
 bool server_game_over = false;
 
-// 게임 점수 관련 변수
-uint64_t game_start_time_ms = 0;
-uint64_t last_score_time = 0;
+SOCKET sockArr[MAX_CLIENT];         
+WSAEVENT eventArr[MAX_CLIENT];     
+bool    client_ready[MAX_CLIENT];  
+int numOfClnt = 0;                 
+static uint32_t client_id = 1;
 uint32_t current_score = 0;
 
-// 클라이언트 소켓과 이벤트 핸들 배열
-SOCKET sockArr[MAX_CLIENT];     // 클라이언트 소켓 배열
-WSAEVENT eventArr[MAX_CLIENT];  // 각 소켓에 대한 이벤트 핸들
-bool    client_ready[MAX_CLIENT];  
-int numOfClnt = 0;              // 현재 접속한 클라이언트 수
-static uint32_t client_id = 1;
-
-// game_logic.c 또는 net_server.c
-uint32_t attacker_death_time_ms = 0;
-bool attacker_pending_respawn = false;
-
-
-// 서버 소켓 초기화 및 리슨
+// 서버 소켓 초기화 및 리슨 설정
 int init_server_socket(int port) {
     WSADATA wsaData;
     SOCKET hServSock;
     SOCKADDR_IN servAdr;
 
+    // Winsock 초기화
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         fputs("WSAStartup() error!\n", stderr);
         return -1;
     }
-
+    // TCP 소켓 생성
     hServSock = socket(PF_INET, SOCK_STREAM, 0);
     if (hServSock == INVALID_SOCKET) {
         fputs("socket() error\n", stderr);
         return -1;
     }
-
+    // 주소 설정: localhost:port
     memset(&servAdr, 0, sizeof(servAdr));
     servAdr.sin_family = AF_INET;
     servAdr.sin_addr.s_addr = inet_addr("127.0.0.1");
     servAdr.sin_port = htons(port);
-
+    // 소켓 바인드
     if (bind(hServSock, (SOCKADDR*)&servAdr, sizeof(servAdr)) == SOCKET_ERROR) {
         fputs("bind() error\n", stderr);
         return -1;
     }
-
+    // 수신 대기
     listen(hServSock, MAX_CLIENT);
 
-    // 첫 번째 이벤트 등록 (FD_ACCEPT 감지)
+    // 서버 소켓 이벤트 등록: FD_ACCEPT
     eventArr[0] = WSACreateEvent();
     sockArr[0] = hServSock;
     WSAEventSelect(hServSock, eventArr[0], FD_ACCEPT);
@@ -70,29 +62,29 @@ int init_server_socket(int port) {
     return hServSock;
 }
 
-// 클라이언트 송수신 소켓 생성
+// 새로운 클라이언트 연결 수락 및 등록
 void accept_new_client(SOCKET serverSock) {
     SOCKET hClntSock;
     SOCKADDR_IN clntAdr;
     int clntAdrSize = sizeof(clntAdr);
 
-    // 새 클라이언트 수락
+    // accept 호출 (blocking 아님)
     hClntSock = accept(serverSock, (SOCKADDR*)&clntAdr, &clntAdrSize);
     if (hClntSock == INVALID_SOCKET) return;
 
-    // 소켓 및 이벤트 등록
+    // 배열에 소켓과 이벤트 추가
     sockArr[numOfClnt] = hClntSock;
     eventArr[numOfClnt] = WSACreateEvent();
-    WSAEventSelect(hClntSock, eventArr[numOfClnt], FD_READ | FD_CLOSE);      // 읽기/종료 감지
+    WSAEventSelect(hClntSock, eventArr[numOfClnt], FD_READ | FD_CLOSE);
 
-    // 준비 상태 초기화
+    // 클라이언트 READY 플래그 초기화
     client_ready[numOfClnt] = false;
 
     printf("Server> client connected: %s:%d\n", inet_ntoa(clntAdr.sin_addr), ntohs(clntAdr.sin_port));
     numOfClnt++;
 }
 
-// 클라이언트 메세지 수신 및 타입 별 처리
+// 인덱스 i의 클라이언트로부터 메시지 수신 및 처리
 int recv_and_dispatch(int i) {
     MsgHeader header;
     int ret = recv_full(sockArr[i], &header, sizeof(header));
@@ -106,13 +98,11 @@ int recv_and_dispatch(int i) {
         return -1;
     }
 
-    MsgType type = header.type;              // protocol.h에서 type이 1바이트(enum)이면 ntohl 불필요
-    uint32_t payload_len = ntohl(header.length); // length 는 4바이트 네트워크 순서
+    // 메시지 타입 및 길이 추출
+    MsgType type = header.type;
+    uint32_t payload_len = ntohl(header.length);
 
-    //printf("Server> [RECV] Header: type=%d, length=%u\n", type, payload_len);
-
-    // --- 메시지 종류 분기 처리 ---
-    // 1. 역할 선택 메시지 처리
+    // 타입별 분기 처리
     if (type == MSG_JOIN && payload_len == sizeof(PayloadJoin)) {
         PayloadJoin joinPayload;
         ret = recv_full(sockArr[i], &joinPayload, sizeof(joinPayload));
@@ -164,10 +154,7 @@ int recv_and_dispatch(int i) {
         // 둘 다 준비됐을 때만 게임 시작
         if (defender_ready && attacker_ready) {
             // GAME_START 이벤트 브로드캐스트
-            MsgHeader h = {
-                .type = MSG_GAME_EVENT,
-                .length = htonl(sizeof(PayloadGameEvent))
-            };
+            MsgHeader h = { .type = MSG_GAME_EVENT, .length = htonl(sizeof(PayloadGameEvent)) };
             PayloadGameEvent ev = { .event_type = GAME_START };
             broadcast_all(&h, sizeof(h));
             broadcast_all(&ev, sizeof(ev));
@@ -235,28 +222,20 @@ int recv_and_dispatch(int i) {
                 e->y = rand() % SCREEN_HEIGHT; // 랜덤 Y 위치
 
                 // 클라이언트에 상태 전송
-                PayloadStateUpdate update = {
-                    .entityId = htonl(entityId),
-                    .x = e->x,
-                    .y = e->y,
-                    .role = ENTITY_ATTACKER
-                };
-                MsgHeader hdr = {
-                    .type = MSG_STATE_UPDATE,
-                    .length = htonl(sizeof(update))
-                };
+                PayloadStateUpdate update = { .entityId = htonl(entityId), .x = e->x,  .y = e->y,  .role = ENTITY_ATTACKER };
+                MsgHeader hdr = { .type = MSG_STATE_UPDATE, .length = htonl(sizeof(update)) };
                 broadcast_all(&hdr, sizeof(hdr));
                 broadcast_all(&update, sizeof(update));
             }
         }
         // 2) 재장전 요청 이벤트 처리
-		else if (type == RELOAD_REQUEST) {
-			LOG_INFO("재장전 요청 수신: entityId = %u", entityId);
-			handle_reload_request();
-		}
-		else {
-			printf("[DEBUG] 알 수 없는 게임 이벤트 타입: %d\n", type);
-		}
+        else if (type == RELOAD_REQUEST) {
+            LOG_INFO("재장전 요청 수신: entityId = %u", entityId);
+            handle_reload_request();
+        }
+        else {
+            printf("[DEBUG] 알 수 없는 게임 이벤트 타입: %d\n", type);
+        }
     }
     else {
         // 정의되지 않은 메시지 → 길이 확인해서 덤프
@@ -279,23 +258,21 @@ int recv_and_dispatch(int i) {
     return 0;
 }
 
-// 클라이언트 연결 종료 및 소켓 제거
+// 클라이언트 연결 끊김 시 정리 및 배열 압축
 void remove_client_at(int index) {
     if (index < 0 || index >= numOfClnt) return;
 
     closesocket(sockArr[index]);
     WSACloseEvent(eventArr[index]);
 
-    // 배열 압축
+    // 마지막 요소로 덮어쓰기
     sockArr[index] = sockArr[numOfClnt - 1];
     eventArr[index] = eventArr[numOfClnt - 1];
     client_ready[index] = client_ready[numOfClnt - 1];
-
     numOfClnt--;
-    index--;
 }
 
-// 클라이언트 종료 전: 방어자인지 확인하고 리셋
+// 방어자 소켓 종료 시 ID 초기화 및 엔티티 비활성화
 void reset_defender_if_match(SOCKET closingSock) {
     for (int i = 0; i < entityCount; ++i) {
         if (!entityArr[i].alive) continue;
@@ -311,18 +288,14 @@ void reset_defender_if_match(SOCKET closingSock) {
     }
 }
 
-// 특정 클라이언트에게 메세지 전송
-void send_to_client(SOCKET sock, const void* buf, int len) {
-        send(sock, buf, len, 0);
-}
-
-// 모든 클라이언트에게 메세지 브로드캐스트
+// 모든 클라이언트에 메시지 브로드캐스트
 void broadcast_all(const void* buf, int len) {
      for (int i = 1; i < numOfClnt; ++i) {      // 0번은 서버 소켓이므로 제외
-         send_to_client(sockArr[i], buf, len);
+         send_full(sockArr[i], buf, len);
      }
  }
 
+// 클라이언트 ID 생성 함수: 내부 카운터 사용
 uint32_t generate_client_id(void) {
     return client_id++;
 }
