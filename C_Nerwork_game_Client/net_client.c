@@ -41,7 +41,7 @@ SOCKET connect_to_server(const char* ip, int port) {
     return sock; // 연결된 소켓 핸들 반환
 }
 
-// 클라이언트 역할을 서버에 전송하고, 서버가 부여한 entity ID를 수신
+// 클라이언트 역할 요청을 서버에 전송하고, 서버가 부여한 entity ID를 수신
 void send_join_and_get_id(SOCKET sock, int role) {
     MsgHeader joinHeader;
     PayloadJoin joinPayload;
